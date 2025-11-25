@@ -26,6 +26,16 @@ class FirestoreService {
     return null;
   }
 
+  /// Atualiza dados do usuário (Nome, Telefone, etc)
+  Future<void> atualizarDadosUsuario(Usuario usuario) async {
+    // .update() só muda os campos enviados, não sobrescreve o doc todo
+    await _db.collection('users').doc(usuario.id).update({
+      'nome': usuario.nome,
+      'telefone': usuario.telefone,
+      'cpf': usuario.cpf, 
+    });
+  }
+
   // ========================== MÉTODOS DE COFRE ========================================
 
   /// Cria um novo cofre E JÁ ADICIONA O CRIADOR COMO ADMIN

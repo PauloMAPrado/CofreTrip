@@ -64,6 +64,15 @@ class AuthService {
     }
   }
 
+  Future<void> atualizarSenha(String novaSenha) async {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      await user.updatePassword(novaSenha);
+    } else {
+      throw Exception("Usuário não está logado.");
+    }
+  }
+
   /// Faz o logout do usuário.
   Future<void> signOut() async {
     await _auth.signOut();
@@ -75,12 +84,10 @@ class AuthService {
       return null; // Sucesso
     } on FirebaseAuthException catch (e) {
       // Retorna a mensagem de erro específica do Firebase (ex: "user-not-found")
-      return e.message; 
+      return e.message;
     } catch (e) {
       // Retorna qualquer outro erro desconhecido
       return e.toString();
     }
   }
-
 }
-
