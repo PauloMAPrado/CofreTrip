@@ -103,6 +103,9 @@ class AuthStore extends ChangeNotifier {
   Future<void> recarregarUsuario() async {
     if (_firebaseUser != null) {
       Usuario? usuarioAtualizado;
+
+      _usuario = usuarioAtualizado;
+      
       notifyListeners();
     }
   }
