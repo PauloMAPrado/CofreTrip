@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:travelbox/controllers/ConviteProvider.dart';
+import 'package:travelbox/controllers/PerfilProvider.dart';
 import 'package:travelbox/controllers/cofreProvider.dart';
 import 'package:travelbox/controllers/detalhesCofreProvider.dart';
 import 'package:travelbox/views/home.dart';
@@ -57,7 +58,12 @@ class MyApp extends StatelessWidget {
           ),
         ),
 
-
+        ChangeNotifierProvider<PerfilProvider>(
+          create: (context) => PerfilProvider(
+            context.read<FirestoreService>(),
+            context.read<AuthService>(),
+          ),
+        ),
 
 
       ],
