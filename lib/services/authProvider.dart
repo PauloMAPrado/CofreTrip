@@ -51,6 +51,7 @@ class AuthStore extends ChangeNotifier {
 
     notifyListeners();
   }
+  
 
   Future<bool> signIn(String email, String password) async {
     _actionStatus = ActionStatus.loading;
@@ -101,14 +102,17 @@ class AuthStore extends ChangeNotifier {
   }
 
   Future<void> recarregarUsuario() async {
+    // 1. Garante que o Firebase reconhece um usuário logado
     if (_firebaseUser != null) {
-      Usuario? usuarioAtualizado;
+      // 2. Busca novamente os dados do perfil no Firestore
+      Usuario? usuarioAtualizado = await _firestoreService.getUsuario(_firebaseUser!.uid);
 
+      // 3. Atualiza o estado local
       _usuario = usuarioAtualizado;
       
       notifyListeners();
+      }
     }
-  }
 
   Future<void> signOut() async { // <--- CORREÇÃO APLICADA!
     await _authService.signOut();
