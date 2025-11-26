@@ -110,7 +110,7 @@ class AuthStore extends ChangeNotifier {
     }
   }
 
-  Future<void> SingOut() async {
+  Future<void> signOut() async { // <--- CORREÇÃO APLICADA!
     await _authService.signOut();
   }
 
