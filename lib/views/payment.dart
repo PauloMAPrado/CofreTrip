@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
-import 'package:travelbox/views/cofre.dart';
 
 class Pagamento extends StatefulWidget {
   const Pagamento({super.key});
@@ -12,17 +11,19 @@ class Pagamento extends StatefulWidget {
 }
 
 class _PagamentoState extends State<Pagamento> {
+  
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF1E90FF),
+      backgroundColor: const Color(0xFF1E90FF),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Header(),
+          const Header(),
           Expanded(
             child: Container(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(50),
@@ -31,46 +32,80 @@ class _PagamentoState extends State<Pagamento> {
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(height: 40.0),
-                    Text(
-                      'Código de Pagamento:',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
-                        fontSize: 17.0,
-                        color: Color.fromARGB(255, 0, 0, 0),
+                child: Center( 
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.construction,
+                        color: const Color.fromARGB(255, 255, 187, 0), // Amarelo de aviso
+                        size: 100,
                       ),
-                    ),
-                    SizedBox(height: 10.0),
-                    Text(
-                      '(62) 99520-4949',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
-                        fontSize: 17.0,
-                        color: Color.fromARGB(255, 0, 0, 0),
-                      ),
-                    ),
-                    SizedBox(height: 20.0),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => Cofre()),
-                        );
-                      },
-                      child: Text('Copiar Código'),
+                      const SizedBox(height: 30.0),
 
-                    ),
-                  ],
+                      // TÍTULO DE AVISO
+                      Text(
+                        'Pagamento em Construção',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 24.0,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 20.0),
+                      
+                      Text(
+                        'A funcionalidade de pagamento via Pix/Cartão está sendo integrada. Pedimos desculpas pelo inconveniente.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16.0,
+                          color: Colors.black54,
+                        ),
+                      ),
+                      const SizedBox(height: 40.0),
+                      
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(); 
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1E90FF),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        ),
+                        child: Text(
+                          'Voltar para o Premium',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16.0,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 20.0),
+
+                      Text(
+                        'Dúvidas: (62) 99520-4949',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14.0,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-              Footbarr(),
-            ],
-          ),
-        );
-      }
-    }
+          const Footbarr(),
+        ],
+      ),
+    );
+  }
+}
