@@ -4,6 +4,8 @@ import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
 import 'package:intl/intl.dart';
 import 'package:travelbox/views/historicoContr.dart';
+import 'package:travelbox/views/listaUser.dart';
+import 'package:travelbox/views/payment.dart';
 
 // TODO: Importe seu Model e seu Provider/Gerenciador de Estado aqui
 // ex: import 'package:travelbox/models/cofre_model.dart';
@@ -170,6 +172,57 @@ class Cofre extends StatelessWidget {
                       style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF1E90FF)),
                     ),
                     const SizedBox(height: 20.0),
+
+                    // Botão para adicionar contribuições
+                    ElevatedButton(
+                      onPressed: () {
+                        // Redirecionar para tela de pagamento
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => Pagamento()),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1E90FF),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15.0),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      ),
+                      child: Text(
+                        'Adicionar Contribuição',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20.0),
+
+                    ElevatedButton(
+                      onPressed: () {
+                        //Redirecionar para a tela de lista de usuários
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => ListaUser()),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color.fromARGB(255, 255, 187, 0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15.0),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      ),
+                      child: Text(
+                        'Visualizar Participantes',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20.0),
                     
                     // INFORMAÇÕES SECUNDÁRIAS (GRID)
                     Row(
@@ -251,3 +304,21 @@ class Cofre extends StatelessWidget {
     );
   }
 }
+
+
+
+    var cofreModel = {
+      'cofreNome': 'Viagem (Exemplo)',
+      'valorAtual': 100.0,
+      'valorAlvo': 1000.0,
+      'dataInicio': DateTime.now(),
+      'codigoAcesso': 'XYZ987'
+    };// crie um construtor de exemplo para testes isolados
+
+
+    // crie uma main para rodar essa tela isoladamente usando esse cofreModel de exemplo
+    void main() {
+      runApp(MaterialApp(
+        home: Cofre(),
+      ));
+    }
