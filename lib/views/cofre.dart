@@ -304,21 +304,3 @@ class Cofre extends StatelessWidget {
     );
   }
 }
-
-
-
-    var cofreModel = {
-      'cofreNome': 'Viagem (Exemplo)',
-      'valorAtual': 100.0,
-      'valorAlvo': 1000.0,
-      'dataInicio': DateTime.now(),
-      'codigoAcesso': 'XYZ987'
-    };// crie um construtor de exemplo para testes isolados
-
-
-    // crie uma main para rodar essa tela isoladamente usando esse cofreModel de exemplo
-    void main() {
-      runApp(MaterialApp(
-        home: Cofre(),
-      ));
-    }
