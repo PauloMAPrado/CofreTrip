@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:travelbox/views/contribuicao.dart';
 import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
 import 'package:intl/intl.dart';
 import 'package:travelbox/views/historicoContr.dart';
 import 'package:travelbox/views/listaUser.dart';
-import 'package:travelbox/views/payment.dart';
 
 // TODO: Importe seu Model e seu Provider/Gerenciador de Estado aqui
 // ex: import 'package:travelbox/models/cofre_model.dart';
@@ -179,7 +179,7 @@ class Cofre extends StatelessWidget {
                         // Redirecionar para tela de pagamento
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => Pagamento()),
+                          MaterialPageRoute(builder: (context) => Contribuicao()),
                         );
                       },
                       style: ElevatedButton.styleFrom(
