@@ -16,22 +16,23 @@ class CofreProvider extends ChangeNotifier {
   List<Cofre> get cofres => _cofres;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  // ...
 
   CofreProvider(this._firestoreService);
 
   Future<void> carregarCofres(String userId) async {
     _isLoading = true;
     _errorMessage = null;
+    notifyListeners(); // Notifica a Home que o carregamento começou
 
     try {
       _cofres = await _firestoreService.getCofresDoUsuario(userId);
     } catch (e) {
-      _errorMessage = "Erro ao carregar cofre: $e";
+      _errorMessage = 'Falha ao carregar cofres: ${e.toString()}';
+      print('ERRO NO PROVIDER: $_errorMessage'); // Log para debug
+    } finally {
+      _isLoading = false;
+      notifyListeners(); // Notifica a Home que o carregamento terminou
     }
-
-    _isLoading = false;
-    notifyListeners();
   }
 
   // ATUALIZAÇÃO: salvarCofre agora precisa saber QUEM está criando

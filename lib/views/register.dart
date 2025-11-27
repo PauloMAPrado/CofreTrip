@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:travelbox/views/login.dart';
 import 'package:travelbox/views/modules/header.dart';
+import '../services/FirestoreService.dart'; 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 
-// NOVAS IMPORTAÇÕES NECESSÁRIAS
-// Para autenticação (Email/Senha)
-import '../services/FirestoreService.dart'; // Para salvar dados (Nome, CPF, Tel)
-import 'package:firebase_auth/firebase_auth.dart'; // Para o tipo User?
-import 'package:cloud_firestore/cloud_firestore.dart'; // Para salvar no Firestore
-
-// Extensão para adicionar o método saveNewUser caso não exista na classe FirestoreService
-// Isso evita alterar o arquivo original do serviço e corrige o erro de compilação.
 extension FirestoreServiceSaveNewUser on FirestoreService {
   Future<void> saveNewUser(String uid, String nome, String cpf, String telefone) async {
     final CollectionReference users = FirebaseFirestore.instance.collection('users');
@@ -31,7 +28,6 @@ class Register extends StatefulWidget {
 }
 
 class _RegisterState extends State<Register> {
-  // --- Controladores ---
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _cpfController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -39,11 +35,13 @@ class _RegisterState extends State<Register> {
   final TextEditingController _senhaController = TextEditingController();
   final TextEditingController _confirmarSenhaController = TextEditingController();
 
-  // --- Serviços e Estado ---
-  final FirestoreService _userService = FirestoreService(); // NOVO: Instância do serviço de dados
+  final FirestoreService _userService = FirestoreService(); 
   bool _isLoading = false;
+  
+  final _phoneMask = MaskTextInputFormatter(
+      mask: '(##) #####-####', 
+      filter: {"#": RegExp(r'[0-9]')});
 
-  // --- Funções de Feedback ---
   void _showSnackBar(String message, {bool isError = false}) {
     if (!mounted) return; 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -239,6 +237,9 @@ Widget build(BuildContext context) {
                             fillColor: Colors.white,
                           ),
                           style: GoogleFonts.poppins(),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.deny(RegExp(r'\s|,|;')),
+                          ],
                         ),
                         const SizedBox(height: 16.0), // Adicionado 'const'
 
@@ -257,6 +258,7 @@ Widget build(BuildContext context) {
                             fillColor: Colors.white,
                           ),
                           style: GoogleFonts.poppins(),
+                          inputFormatters: [_phoneMask],
                         ),
                         const SizedBox(height: 16.0), // Adicionado 'const'
 

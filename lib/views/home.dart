@@ -4,6 +4,9 @@ import 'package:travelbox/views/criacofre.dart';
 import 'package:travelbox/views/entracofre.dart';
 import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
+import 'package:travelbox/controllers/cofreProvider.dart';
+import 'package:provider/provider.dart';
+import 'package:travelbox/services/authProvider.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -12,8 +15,22 @@ class Home extends StatefulWidget {
   _HomeState createState() => _HomeState();
 }
 
+
 class _HomeState extends State<Home> {
   @override
+
+  void initState(){
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authStore = Provider.of<AuthStore>(context, listen: false);
+      final cofreProvider = Provider.of<CofreProvider>(context, listen: false);
+      if (authStore.usuario?.id?.isNotEmpty ?? false ){
+        final userId = authStore.usuario!.id!;
+        cofreProvider.carregarCofres(userId);
+      }
+    });
+  }
+  
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF1E90FF),
