@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:travelbox/services/authProvider.dart';
+import 'package:travelbox/utils/feedbackHelper.dart';
 import 'package:travelbox/views/modules/header.dart';
 import 'register.dart';
 import 'recover.dart';
@@ -126,33 +127,80 @@ class _LoginState extends State<Login> {
 
                     //Login
                     ElevatedButton(
+                      
+                      
                       // LIGAÇÃO DA FUNÇÃO CORRIGIDA
-                      onPressed: isLoading
-                          ? null
-                          : () async {
-                              bool sucesso = await context
-                                  .read<AuthStore>()
-                                  .signIn(
-                                    _emailController.text.trim(),
-                                    _passwordController.text.trim(),
-                                  );
+                      onPressed: isLoading ? null : () async {
+                        // 1. CAPTURAR O STORE ANTES (Técnica "Capture Before")
+                        // Pegamos a referência do "Garçom" enquanto é seguro usar o context.
+                        final authStore = context.read<AuthStore>();
 
-                              if (!sucesso) {
-                                String erroCru =
-                                    context.read<AuthStore>().errorMessage ??
-                                    "Erro desconhecido";
+                        // 2. Executa a ação usando a variável capturada (authStore)
+                        // Note que não usamos 'context.read' aqui, usamos a variável 'authStore' direto.
+                        bool sucesso = await authStore.signIn(
+                              _emailController.text.trim(),
+                              _passwordController.text.trim(),
+                            );
 
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(_traduzirErro(erroCru)),
-                                      backgroundColor: Colors.red,
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                }
-                              }
-                            },
+                        // 3. Verificação de segurança moderna
+                        // Tente usar '!context.mounted' se seu Flutter for recente, é mais preciso.
+                        if (!context.mounted) return;
+
+                        // 4. Lidar com o erro
+                        if (!sucesso) {
+                          // AGORA O PULO DO GATO:
+                          // Lemos o erro da variável 'authStore' que capturamos lá em cima.
+                          // Não precisamos fazer 'context.read' de novo! Isso elimina o erro do linter.
+                          String? erroCru = authStore.errorMessage;
+                          
+                          // Aqui usamos o context apenas para mostrar o visual, o que é permitido após a checagem
+                          FeedbackHelper.mostrarErro(context, erroCru);
+                        }
+                      }, 
+
+//====================================TESTE===========================================
+
+/*
+
+                      onPressed: isLoading ? null : () async {
+                        // Debug 1: Avisa que clicou
+                        print("--- INICIANDO LOGIN ---");
+                        
+                        final authStore = context.read<AuthStore>();
+
+                        bool sucesso = await authStore.signIn(
+                              _emailController.text.trim(),
+                              _passwordController.text.trim(),
+                            );
+
+                        // Debug 2: Vê o resultado do Store
+                        print("--- LOGIN FINALIZADO ---");
+                        print("Sucesso: $sucesso");
+                        print("Mensagem de erro no Store: ${authStore.errorMessage}");
+
+                        if (!context.mounted) return;
+
+                        if (!sucesso) {
+                          print("--- ENTRANDO NO BLOCO DE ERRO ---");
+                          
+                          String? erroCru = authStore.errorMessage;
+                          
+                          // Debug 3: Vê o que está sendo enviado para o Helper
+                          print("Enviando para FeedbackHelper: $erroCru");
+                          
+                          FeedbackHelper.mostrarErro(context, erroCru);
+                        } else {
+                          print("--- LOGIN FOI UM SUCESSO (Não deve mostrar erro) ---");
+                        }
+                      },
+
+
+*/
+
+
+
+//====================================TESTE===========================================
+
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1E90FF),
                         padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -228,32 +276,5 @@ class _LoginState extends State<Login> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
-  }
-
-  String _traduzirErro(String erroRaw) {
-    // Converte para minúsculo para facilitar a busca
-    String erro = erroRaw.toLowerCase();
-
-    if (erro.contains('user-not-found') || erro.contains('user not found')) {
-      return 'Usuário não encontrado. Verifique o e-mail.';
-    } else if (erro.contains('wrong-password') ||
-        erro.contains('wrong password')) {
-      return 'Senha incorreta.';
-    } else if (erro.contains('invalid-email') ||
-        erro.contains('badly formatted')) {
-      return 'E-mail inválido.';
-    } else if (erro.contains('network-request-failed')) {
-      return 'Verifique sua conexão com a internet.';
-    } else if (erro.contains('too-many-requests')) {
-      return 'Muitas tentativas. Aguarde um momento e tente novamente.';
-    } else if (erro.contains('email-already-in-use')) {
-      return 'Este e-mail já está cadastrado.';
-    } else if (erro.contains('invalid-credential')) {
-      // O Firebase novo as vezes usa isso para senha errada também
-      return 'E-mail ou senha incorretos.';
-    }
-
-    // Se não soubermos o que é, mostramos a mensagem original ou uma genérica
-    return 'Erro ao fazer login. Tente novamente.';
   }
 }
