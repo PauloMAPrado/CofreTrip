@@ -66,6 +66,7 @@ class AuthStore extends ChangeNotifier {
       return true;
     } else {
       _actionStatus = ActionStatus.error;
+      _errorMessage = errorMessage;
       notifyListeners();
       return false;
     }
@@ -109,12 +110,13 @@ class AuthStore extends ChangeNotifier {
 
       // 3. Atualiza o estado local
       _usuario = usuarioAtualizado;
-      
+
       notifyListeners();
       }
     }
 
-  Future<void> signOut() async { // <--- CORREÇÃO APLICADA!
+  Future<void> signOut() async {
+    // <--- CORREÇÃO APLICADA!
     await _authService.signOut();
   }
 
