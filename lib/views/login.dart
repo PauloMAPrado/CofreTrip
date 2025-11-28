@@ -129,77 +129,22 @@ class _LoginState extends State<Login> {
                     ElevatedButton(
                       
                       
-                      // LIGAÇÃO DA FUNÇÃO CORRIGIDA
                       onPressed: isLoading ? null : () async {
-                        // 1. CAPTURAR O STORE ANTES (Técnica "Capture Before")
-                        // Pegamos a referência do "Garçom" enquanto é seguro usar o context.
                         final authStore = context.read<AuthStore>();
 
-                        // 2. Executa a ação usando a variável capturada (authStore)
-                        // Note que não usamos 'context.read' aqui, usamos a variável 'authStore' direto.
                         bool sucesso = await authStore.signIn(
                               _emailController.text.trim(),
                               _passwordController.text.trim(),
                             );
 
-                        // 3. Verificação de segurança moderna
-                        // Tente usar '!context.mounted' se seu Flutter for recente, é mais preciso.
                         if (!context.mounted) return;
 
-                        // 4. Lidar com o erro
                         if (!sucesso) {
-                          // AGORA O PULO DO GATO:
-                          // Lemos o erro da variável 'authStore' que capturamos lá em cima.
-                          // Não precisamos fazer 'context.read' de novo! Isso elimina o erro do linter.
                           String? erroCru = authStore.errorMessage;
                           
-                          // Aqui usamos o context apenas para mostrar o visual, o que é permitido após a checagem
                           FeedbackHelper.mostrarErro(context, erroCru);
                         }
                       }, 
-
-//====================================TESTE===========================================
-
-/*
-
-                      onPressed: isLoading ? null : () async {
-                        // Debug 1: Avisa que clicou
-                        print("--- INICIANDO LOGIN ---");
-                        
-                        final authStore = context.read<AuthStore>();
-
-                        bool sucesso = await authStore.signIn(
-                              _emailController.text.trim(),
-                              _passwordController.text.trim(),
-                            );
-
-                        // Debug 2: Vê o resultado do Store
-                        print("--- LOGIN FINALIZADO ---");
-                        print("Sucesso: $sucesso");
-                        print("Mensagem de erro no Store: ${authStore.errorMessage}");
-
-                        if (!context.mounted) return;
-
-                        if (!sucesso) {
-                          print("--- ENTRANDO NO BLOCO DE ERRO ---");
-                          
-                          String? erroCru = authStore.errorMessage;
-                          
-                          // Debug 3: Vê o que está sendo enviado para o Helper
-                          print("Enviando para FeedbackHelper: $erroCru");
-                          
-                          FeedbackHelper.mostrarErro(context, erroCru);
-                        } else {
-                          print("--- LOGIN FOI UM SUCESSO (Não deve mostrar erro) ---");
-                        }
-                      },
-
-
-*/
-
-
-
-//====================================TESTE===========================================
 
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1E90FF),
