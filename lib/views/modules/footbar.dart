@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:travelbox/views/home.dart';
 import 'package:travelbox/views/account.dart';
 import 'package:travelbox/views/premium.dart'; 
-import 'package:travelbox/views/login.dart'; // Adicionado, caso precise logar
 
 class Footbarr extends StatefulWidget {
   const Footbarr({super.key});

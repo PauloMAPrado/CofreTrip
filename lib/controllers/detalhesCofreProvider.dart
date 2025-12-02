@@ -1,20 +1,34 @@
 import 'package:flutter/material.dart';
-import 'package:travelbox/models/contribuicao.dart';
-import 'package:travelbox/models/permissao.dart';
-import 'package:travelbox/services/FirestoreService.dart';
+import '../models/cofre.dart'; 
+import '../models/contribuicao.dart';
+import '../models/permissao.dart';
+import '../services/FirestoreService.dart';
 
 class DetalhesCofreProvider extends ChangeNotifier {
   final FirestoreService _firestoreService;
 
+  // --- VARIÁVEIS DE ESTADO ---
+  
+  // 1. O objeto Cofre principal
+  Cofre? _cofreAtivo; 
+
+  // 2. Estado de carregamento e erro
   bool _isLoading = false;
-  String? _errorMessege;
+  String? _errorMessage; // 🎯 CORREÇÃO: Nome padronizado
 
+  // 3. Listas de dados
   List<Contribuicao> _contribuicoes = [];
+  List<Permissao> _membros = []; 
 
-  List<Permissao> _membros = [];
-
-  bool get isload => _isLoading;
-  String? get errorMensage => _errorMessege;
+  // --- GETTERS PÚBLICOS ---
+  
+  Cofre? get cofreAtivo => _cofreAtivo; 
+  
+  bool get isLoading => _isLoading; 
+  
+  // 🎯 CORREÇÃO: Getter público que a View está tentando acessar
+  String? get errorMessage => _errorMessage; 
+  
   List<Contribuicao> get contribuicoes => _contribuicoes;
   List<Permissao> get membros => _membros;
 
@@ -24,25 +38,43 @@ class DetalhesCofreProvider extends ChangeNotifier {
 
   DetalhesCofreProvider(this._firestoreService);
 
+  // ----------------------------------------------------
+  // MÉTODO PRINCIPAL: CARREGAR DADOS DO COFRE
+  // ----------------------------------------------------
   Future<void> carregarDadosCofre(String cofreId) async {
     _isLoading = true;
-    _errorMessege = null;
+    _errorMessage = null; 
+    notifyListeners(); 
 
     try {
+      // 1. Buscas concorrentes
       final results = await Future.wait([
-        _firestoreService.getContribuicoesDoCofre(cofreId),
-        _firestoreService.getMembrosCofre(cofreId),
+        _firestoreService.getCofreById(cofreId),        // 0: Objeto Cofre principal
+        _firestoreService.getContribuicoesDoCofre(cofreId), // 1: Contribuições
+        _firestoreService.getPermissoesDoCofre(cofreId), // 2: Permissões (Membros)
       ]);
 
-      _contribuicoes = results[0] as List<Contribuicao>;
+      // 2. Atribuições dos resultados (Casting seguro)
+      _cofreAtivo = results[0] as Cofre?; 
+      _contribuicoes = results[1] as List<Contribuicao>;
+      _membros = results[2] as List<Permissao>; 
+
+      if (_cofreAtivo == null) {
+          throw Exception("Cofre não encontrado ou acesso negado.");
+      }
+
     } catch (e) {
-      _errorMessege = "Erro ao carregar detalhes: $e";
+      _errorMessage = "Erro ao carregar detalhes: ${e.toString()}";
+      _cofreAtivo = null; 
     }
 
     _isLoading = false;
-    notifyListeners();
+    notifyListeners(); 
   }
 
+  // ----------------------------------------------------
+  // ADICIONAR CONTRIBUIÇÃO (Mantido o fluxo de atualização)
+  // ----------------------------------------------------
   Future<bool> adicionarContribuicao({
     required String cofreId,
     required String usuarioId,
@@ -50,6 +82,7 @@ class DetalhesCofreProvider extends ChangeNotifier {
     required DateTime data,
   }) async {
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
@@ -62,14 +95,18 @@ class DetalhesCofreProvider extends ChangeNotifier {
       );
 
       await _firestoreService.addContribuicao(nova);
+      await _firestoreService.atualizarSaldoCofre(cofreId, valor); // Atualização atômica
+      
+      _contribuicoes.insert(0, nova); // Adiciona localmente
 
-      _contribuicoes.insert(0, nova);
+      // ⚠️ IMPORTANTE: Chamamos o carregarDadosCofre para sincronizar o saldo total
+      await carregarDadosCofre(cofreId); 
 
-      _isLoading = false;
-      notifyListeners();
+      // isLoading e notifyListeners serão chamados no final de carregarDadosCofre
+
       return true;
     } catch (e) {
-      _errorMessege = e.toString();
+      _errorMessage = e.toString();
       _isLoading = false;
       notifyListeners();
       return false;
