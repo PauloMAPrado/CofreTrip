@@ -59,7 +59,7 @@ class FirestoreService {
     return cofreComId;
   }
 
-  /// MÉTODO NOVO: Encontra um cofre pelo seu código de entrada
+  /// MÉTODO CORRIGIDO: Encontra um cofre pelo seu código de entrada
   Future<Cofre?> findCofreByCode(String code) async {
     // Busca na coleção 'cofres' onde o 'joinCode' é igual ao código
     final snapshot = await _db
@@ -72,8 +72,12 @@ class FirestoreService {
       return null; // Nenhum cofre encontrado
     }
 
+    // 🎯 CORREÇÃO: Fazemos o casting explícito para DocumentSnapshot<Map<String, dynamic>>
+    // para garantir que o tipo de entrada corresponda ao construtor fromFirestore.
+    final doc = snapshot.docs.first as DocumentSnapshot<Map<String, dynamic>>;
+
     // Retorna o primeiro cofre encontrado
-    return Cofre.fromFirestore(snapshot.docs.first);
+    return Cofre.fromFirestore(doc);
   }
 
   /// MÉTODO NOVO (ou atualizado): Adiciona uma permissão
@@ -269,6 +273,8 @@ class FirestoreService {
       'status': novoStatus.name,
     });
   }
+
+  getCofreById(String cofreId) {}
 
 //====================== Membros e Convites implementado ===================
 

@@ -5,9 +5,10 @@ import 'package:travelbox/views/modules/header.dart';
 import 'package:intl/intl.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart'; 
 import 'package:provider/provider.dart';
-import 'home.dart'; // Destino Final (Lista de Viagens)
+import 'home.dart'; 
 import 'package:travelbox/controllers/cofreProvider.dart';
 import 'package:travelbox/services/authProvider.dart';
+
 class Criacofre extends StatefulWidget {
   const Criacofre({super.key});
 
@@ -22,9 +23,7 @@ class _CriacofreState extends State<Criacofre> {
   final TextEditingController _valorAlvoController = TextEditingController();
   
   // --- Formatadores ---
-  final DateFormat _dateFormat = DateFormat('dd/MM/yyyy'); // Para exibir a data selecionada
-  
-  // Inicialização do formatador de máscara para R$
+  final DateFormat _dateFormat = DateFormat('dd/MM/yyyy');
   final _currencyMask = MaskTextInputFormatter(
     mask: '#.###.###,00', 
     filter: {"#": RegExp(r'[0-9]')},
@@ -58,12 +57,12 @@ class _CriacofreState extends State<Criacofre> {
   }
 
   // --- Lógica Principal: Dispara o evento (SÍNCRONA) ---
-  void _handleCreateCofre() async { // Continua async para aguardar o Provider
+  void _handleCreateCofre() async {
     
     // 1. Pega os dados BRUTOS da UI
-    final nome = _nomeController.text;
-    final dataInicioRaw = _dataInicioController.text; 
-    final valorAlvoRaw = _valorAlvoController.text; 
+    final nome = _nomeController.text.trim();
+    final dataInicioRaw = _dataInicioController.text.trim(); 
+    final valorAlvoRaw = _valorAlvoController.text.trim(); 
 
     // 2. Validação básica de preenchimento (apenas Strings vazias)
     if (nome.isEmpty || dataInicioRaw.isEmpty || valorAlvoRaw.isEmpty) {
@@ -71,37 +70,50 @@ class _CriacofreState extends State<Criacofre> {
       return;
     }
 
+    // 3. Validação e Limpeza do Valor Alvo
+    final cleanValorAlvo = valorAlvoRaw
+        .replaceAll('R\$', '')
+        .replaceAll('.', '') // Remove ponto de milhar
+        .replaceAll(',', '.') // Converte vírgula para ponto decimal
+        .trim(); 
+
+    final double? parsedValorAlvo = double.tryParse(cleanValorAlvo);
+
+    if (parsedValorAlvo == null || parsedValorAlvo <= 0) {
+      _showSnackBar('O Valor Alvo deve ser um número maior que R\$ 0,00.', isError: true);
+      return;
+    }
+
     // --- ACESSA PROVIDERS E VERIFICAÇÃO DE SEGURANÇA ---
     final cofreProvider = Provider.of<CofreProvider>(context, listen: false);
     final authStore = Provider.of<AuthStore>(context, listen: false);
 
-    // Verificação de Usuário Logado
-    if (authStore.usuario?.id== null) {
+    // 4. VERIFICAÇÃO DE USUÁRIO (Corrigido para usar a checagem completa de ID)
+    if (authStore.usuario?.id?.isNotEmpty != true) {
         _showSnackBar('O perfil não foi carregado. Tente novamente.', isError: true);
         return;
     }
     
-    final String userId = authStore.usuario!.id!;
+    final String userId = authStore.usuario!.id!; // Agora é seguro usar '!'
+    final int valorPlanoInt = parsedValorAlvo.toInt(); 
     
-    // 3. DISPARA A CRIAÇÃO NO PROVIDER COM DADOS BRUTOS
-    // O Provider fará a limpeza (R$ -> double) e validação (> 0) internamente.
+    // 5. DISPARA A CRIAÇÃO NO PROVIDER
     bool sucesso = await cofreProvider.criarCofre(
         nome: nome, 
-        valorPlanoRaw: valorAlvoRaw, // Passa a String bruta
-        dataInicioRaw: dataInicioRaw, // Passa a String bruta
+        valorPlanoRaw: valorAlvoRaw, 
+        dataInicioRaw: dataInicioRaw, 
         userId: userId,
     );
     
-    // 4. AVALIA O RESULTADO E NAVEGA
+    // 6. AVALIA O RESULTADO E NAVEGA
     if (sucesso && mounted) {
         _showSnackBar('Cofre criado com sucesso!', isError: false);
         // NAVEGAÇÃO FINAL PARA A HOME/LISTA DE VIAGENS
-        Navigator.of(context).pushReplacement(
+        Navigator.of(context).pop(
             MaterialPageRoute(builder: (context) => const Home()), 
         );
     } else {
-        // Usa a mensagem de erro que o Provider definiu (ex: Valor < 0, erro no Firestore)
-        _showSnackBar(cofreProvider.errorMessage ?? 'Falha desconhecida.', isError: true);
+        _showSnackBar(cofreProvider.errorMessage ?? 'Falha desconhecida ao criar cofre.', isError: true);
     }
   }
 
@@ -125,7 +137,7 @@ class _CriacofreState extends State<Criacofre> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Header(), 
+          Header(), // A chamada do widget
           Expanded(
             child: Container(
               decoration: const BoxDecoration( 
@@ -137,7 +149,7 @@ class _CriacofreState extends State<Criacofre> {
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: SingleChildScrollView( 
+                child: SingleChildScrollView( // Para evitar overflow do teclado
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
