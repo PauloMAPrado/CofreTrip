@@ -178,7 +178,7 @@ class Cofre extends StatelessWidget {
                         // Redirecionar para tela de pagamento
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => Contribuicao()),
+                          MaterialPageRoute(builder: (context) => Contribuicao(cofreId: cofreId)),
                         );
                       },
                       style: ElevatedButton.styleFrom(

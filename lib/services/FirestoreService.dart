@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_cast
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:travelbox/models/cofre.dart';
 import 'package:travelbox/models/contribuicao.dart';
@@ -35,6 +37,8 @@ class FirestoreService {
       'cpf': usuario.cpf, 
     });
   }
+
+  
 
   // ========================== MÉTODOS DE COFRE ========================================
 
@@ -184,6 +188,13 @@ class FirestoreService {
         )
         .toList();
   }
+  Future<void> atualizarSaldoCofre(String cofreId, double valorContribuido) async {
+    await _db.collection('cofres').doc(cofreId).update({
+    // 🎯 CRÍTICO: FieldValue.increment() garante que a soma ocorra no servidor
+    // sem risco de sobreposição de dados.
+      'despesasTotal': FieldValue.increment(valorContribuido), 
+  });
+  }
 
   // ----- MÉTODOS DE PERMISSÃO -----
 
@@ -274,7 +285,24 @@ class FirestoreService {
     });
   }
 
-  getCofreById(String cofreId) {}
+  Future<Cofre?> getCofreById(String cofreId) async {
+    try {
+      // 1. Busca o documento (doc é DocumentSnapshot<Object?> por padrão)
+      final doc = await _db.collection('cofres').doc(cofreId).get();
+      
+      if (doc.exists) {
+        // 2. Faz o casting explícito e seguro, necessário para o construtor do Model
+        final typedDoc = doc as DocumentSnapshot<Map<String, dynamic>>;
+        
+        // 3. Passa o documento tipado para o construtor de fábrica
+        return Cofre.fromFirestore(typedDoc);
+      }
+      return null;
+    } catch (e) {
+      print("Erro ao buscar cofre por ID ($cofreId): $e");
+      return null;
+    }
+  }
 
 //====================== Membros e Convites implementado ===================
 

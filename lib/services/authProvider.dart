@@ -51,6 +51,12 @@ class AuthStore extends ChangeNotifier {
 
     notifyListeners();
   }
+
+  void resetActionStatus() {
+    _actionStatus = ActionStatus.initial;
+    _errorMessage = null; 
+    notifyListeners();
+  }
   
 
   Future<bool> signIn(String email, String password) async {
