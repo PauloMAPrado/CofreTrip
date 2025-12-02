@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:travelbox/views/criacofre.dart';
 import 'package:travelbox/views/entracofre.dart';
-import 'package:travelbox/views/cofre.dart'; // Adicionando a importação para cofre.dart
 import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
 
@@ -148,7 +147,7 @@ class HomeCard extends StatelessWidget {
           // Navegar para a tela cofre.dart ao clicar
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => Cofre()), // Assumindo que Cofre é a classe da tela cofre.dart
+            MaterialPageRoute(builder: (context) => Home()), // Assumindo que Cofre é a classe da tela cofre.dart
           );
         },
         child: Padding(

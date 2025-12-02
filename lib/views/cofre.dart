@@ -7,13 +7,10 @@ import 'package:intl/intl.dart';
 import 'package:travelbox/views/historicoContr.dart';
 import 'package:travelbox/views/listaUser.dart';
 
-// TODO: Importe seu Model e seu Provider/Gerenciador de Estado aqui
-// ex: import 'package:travelbox/models/cofre_model.dart';
-// ex: import 'package:provider/provider.dart';
-
 class Cofre extends StatelessWidget {
   // 1. O Construtor agora é limpo, sem parâmetros de dados
-  Cofre({super.key});
+  final String cofreId; 
+  Cofre({super.key, required this.cofreId});
 
   // --- Formatação de Moeda e Data ---
   // (Movidos para dentro do build ou podem ficar aqui se preferir)
@@ -22,6 +19,8 @@ class Cofre extends StatelessWidget {
     symbol: 'R\$',
     decimalDigits: 2,
   );
+
+  
 
   final DateFormat _dateFormat = DateFormat('dd/MM/yyyy');
 
@@ -204,7 +203,7 @@ class Cofre extends StatelessWidget {
                         //Redirecionar para a tela de lista de usuários
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => ListaUser()),
+                          MaterialPageRoute(builder: (context) => ListaUser(cofreId: cofreId))
                         );
                       },
                       style: ElevatedButton.styleFrom(

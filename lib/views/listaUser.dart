@@ -5,7 +5,9 @@ import 'package:travelbox/views/cofre.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class ListaUser extends StatefulWidget {
-  const ListaUser({super.key});
+  final String cofreId; 
+  
+  const ListaUser({super.key, required this.cofreId});
 
   @override
   _ListaUserState createState() => _ListaUserState();
@@ -89,8 +91,9 @@ class _ListaUserState extends State<ListaUser> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => Cofre(),
-                          ),
+          // 🎯 O CORPO DA TELA (Cofre) DEVE SER UMA NOVA INSTÂNCIA
+                          builder: (context) => Cofre(cofreId: widget.cofreId), 
+                        ),
                         );
                       },
                       style: ElevatedButton.styleFrom(

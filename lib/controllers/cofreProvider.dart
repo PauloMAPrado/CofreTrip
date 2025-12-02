@@ -4,6 +4,7 @@ import 'package:travelbox/models/permissao.dart';
 import 'package:travelbox/models/nivelPermissao.dart';
 import 'package:travelbox/services/FirestoreService.dart';
 
+
 class CofreProvider extends ChangeNotifier {
   // 2. DEPENDÊNCIA DO SERVICE (A "COZINHA")
   // Ele "conhece" o service, mas a UI não.
@@ -37,28 +38,62 @@ class CofreProvider extends ChangeNotifier {
 
   // ATUALIZAÇÃO: salvarCofre agora precisa saber QUEM está criando
 
-  Future<bool> criarCofre(String nome, int valorPlano, String userId) async {
+  Future<bool> criarCofre({
+    required String nome, 
+    required String valorPlanoRaw,  // CORREÇÃO: Aceita a String bruta do valor
+    required String dataInicioRaw,  // CORREÇÃO: Aceita a String bruta da data
+    required String userId,
+}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      // Usamos nosso novo factory 'Cofre.novo'
-      Cofre novoCofre = Cofre.novo(nome: nome, valorPlano: valorPlano);
+        
+        if (nome.trim().isEmpty || dataInicioRaw.isEmpty || valorPlanoRaw.isEmpty) {
+             throw Exception("Por favor, preencha todos os campos.");
+        }
+  
+        final cleanValorAlvo = valorPlanoRaw
+            .replaceAll('R\$', '')
+            .replaceAll('.', '') // Remove ponto de milhar
+            .replaceAll(',', '.') // Converte vírgula para ponto decimal
+            .trim(); 
 
-      // Passa o cofre e o ID do criador para o service
-      Cofre cofreSalvo = await _firestoreService.criarCofre(novoCofre, userId);
+        final double? parsedValorAlvo = double.tryParse(cleanValorAlvo);
 
-      _cofres.add(cofreSalvo); // Adiciona o novo cofre à lista local
+        if (parsedValorAlvo == null || parsedValorAlvo <= 0) {
+             throw Exception("O Valor Alvo deve ser um número maior que R\$ 0,00.");
+        }
+        
+        final DateTime parsedDataInicio = DateTime.parse(dataInicioRaw); 
+        final int valorAlvoInt = parsedValorAlvo.round();
+        
+        
+        
+        // CORREÇÃO: O Cofre.novo deve aceitar o DOUBLE e o DateTime
+        Cofre novoCofre = Cofre.novo(
+          nome: nome.trim(), // String limpa
+          valorPlano: valorAlvoInt, // O valor convertido
+          dataViagem: parsedDataInicio, // A data convertida
+        );
+      
 
-      _isLoading = false;
-      notifyListeners();
-      return true;
+        Cofre cofreSalvo = await _firestoreService.criarCofre(novoCofre, userId);
+
+        _cofres.add(cofreSalvo); // Adiciona o novo cofre à lista local
+
+        _isLoading = false;
+        notifyListeners();
+        return true;
+        
     } catch (e) {
-      _isLoading = false;
-      _errorMessage = "Erro ao salvar cofre: ${e.toString()}";
-      notifyListeners();
-      return false;
+        _isLoading = false;
+        _errorMessage = e.toString().contains("Exception:") 
+                        ? e.toString().split(":").last.trim() 
+                        : "Erro interno: ${e.toString()}";
+        notifyListeners();
+        return false;
     }
   }
 
