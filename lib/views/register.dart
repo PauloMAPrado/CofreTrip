@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:travelbox/services/authProvider.dart';
 import 'package:travelbox/utils/feedbackHelper.dart';
-import 'package:travelbox/views/login.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:travelbox/views/modules/header.dart';
 
@@ -114,7 +113,9 @@ class _RegisterState extends State<Register> {
                         isLoading: isLoading,
                       ),
 
-                      /*
+/*     +++++++++++++++++++ VERSÃO ANTIGA DO CODIGO CASO ALGO DE MERDA!!!!!!!! ++++++++++++++++++++++++++++
+                      
+                      
                       TextField(
                         controller: _nomeController, 
                         keyboardType: TextInputType.name,
@@ -294,14 +295,7 @@ class _RegisterState extends State<Register> {
 
                           //Botão Login
                           TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const Login(),
-                                ), // Adicionado 'const'
-                              );
-                            },
+                            onPressed: () => Navigator.pop(context),
                             child: Text(
                               'Logue agora',
                               style: GoogleFonts.poppins(
@@ -341,6 +335,7 @@ class _RegisterState extends State<Register> {
     bool isObscure = false,
     bool isLoading = false,
     TextInputType inputType = TextInputType.text,
+    List<dynamic>? inputFormatters,
   }) {
     return TextField(
       controller: controller,
@@ -361,10 +356,10 @@ class _RegisterState extends State<Register> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _nomeController.dispose();
     _cpfController.dispose();
     _emailController.dispose();
-    _passwordController.dispose();
+    _senhaController.dispose();
     super.dispose();
   }
 }
