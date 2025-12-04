@@ -87,23 +87,28 @@ class _LoginState extends State<Login> {
                         ),
                       ),
                       
-                      const SizedBox(height: 10),
+                      onPressed: isLoading ? null : () async {
+                        final authStore = context.read<AuthStore>();
 
-                      // BOTÃO LOGIN
-                      ElevatedButton(
-                        onPressed: isLoading ? null : () async {
-                            final authStore = context.read<AuthStore>(); // Captura o store
-                            // Chama a ação no store
-                            await authStore.signIn(
+                        bool sucesso = await authStore.signIn(
                               _emailController.text.trim(),
                               _passwordController.text.trim(),
                             );
-                            // A navegação global é feita pelo main.dart ao observar o status.
-                        }, 
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1E90FF),
-                          padding: const EdgeInsets.symmetric(vertical: 16.0),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+
+                        if (!context.mounted) return;
+
+                        if (!sucesso) {
+                          String? erroCru = authStore.errorMessage;
+                          
+                          FeedbackHelper.mostrarErro(context, erroCru);
+                        }
+                      }, 
+
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1E90FF),
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
                         ),
                         child: isLoading
                             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
