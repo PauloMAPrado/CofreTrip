@@ -106,7 +106,7 @@ class DetalhesCofreProvider extends ChangeNotifier {
     required DateTime data,
   }) async {
     _isLoading = true;
-    _errorMessage = null;
+    _errorMessage = null; 
     notifyListeners();
 
     try {
@@ -118,20 +118,22 @@ class DetalhesCofreProvider extends ChangeNotifier {
         data: data,
       );
 
+      // 1. Salva a contribuição
       await _firestoreService.addContribuicao(nova);
-      await _firestoreService.atualizarSaldoCofre(cofreId, valor); // Atualização atômica
+
+      // 2. Atualiza o saldo total no cofre (operação atômica)
+      await _firestoreService.atualizarSaldoCofre(cofreId, valor);
       
-      _contribuicoes.insert(0, nova); // Adiciona localmente
-
-      // ⚠️ IMPORTANTE: Chamamos o carregarDadosCofre para sincronizar o saldo total
+      // 3. 🎯 SINCRONIZAÇÃO: Chama o método de recarga para buscar o novo saldo do BD
+      // Esta chamada é crucial para o saldo aparecer imediatamente na tela Cofre.dart
       await carregarDadosCofre(cofreId); 
-
-      // isLoading e notifyListeners serão chamados no final de carregarDadosCofre
+      
+      // Nota: carregarDadosCofre já define _isLoading = false e notifyListeners()
 
       return true;
     } catch (e) {
       _errorMessage = e.toString();
-      _isLoading = false;
+      _isLoading = false; // Garante que o loading para, mesmo em caso de falha
       notifyListeners();
       return false;
     }

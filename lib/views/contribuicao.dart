@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; 
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart'; // Para DateFormat
+import 'package:intl/intl.dart'; 
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart'; 
+
 import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
-import '../controllers/detalhesCofreProvider.dart'; // Provider
-import '../services/authProvider.dart'; // AuthStore
+
+import '../controllers/detalhesCofreProvider.dart'; 
+import '../services/authProvider.dart'; 
 
 
 class Contribuicao extends StatefulWidget {
-  // 🎯 CRÍTICO: O ID do Cofre é obrigatório para a transação
+  // CRÍTICO: O ID do Cofre é obrigatório
   final String cofreId;
   
   const Contribuicao({super.key, required this.cofreId});
@@ -23,13 +26,13 @@ class _ContribuicaoState extends State<Contribuicao> {
   // --- Controladores e Estado ---
   final TextEditingController _valorController = TextEditingController();
   final TextEditingController _dataController = TextEditingController();
-  String? _formaPagamentoSelecionada; // Estado para o Dropdown
+  String? _formaPagamentoSelecionada; 
   bool _isLoading = false; 
 
   // --- Formatadores ---
   final DateFormat _dateFormat = DateFormat('yyyy-MM-dd');
   final _currencyMask = MaskTextInputFormatter(
-    mask: '##.###.###,00', // Máscara robusta
+    mask: '##.###.###,00', 
     filter: {"#": RegExp(r'[0-9]')},
     type: MaskAutoCompletionType.lazy,
   );
@@ -51,7 +54,7 @@ class _ContribuicaoState extends State<Contribuicao> {
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime(2023),
-      lastDate: DateTime.now(), // Contribuições geralmente não são futuras
+      lastDate: DateTime.now(), 
       helpText: 'Selecione a Data da Contribuição',
     );
     if (picked != null) {
@@ -99,12 +102,12 @@ class _ContribuicaoState extends State<Contribuicao> {
         return;
     }
     
-    // 5. Salva a transação e atualiza o saldo
+    // 5. Salva a transação
     final userId = authStore.usuario!.id!;
     final DateTime dataTransacao = DateTime.parse(dataRaw);
 
     bool sucesso = await detalhesProvider.adicionarContribuicao(
-        cofreId: widget.cofreId,
+        cofreId: widget.cofreId, // Usando o ID recebido no construtor
         usuarioId: userId,
         valor: valorContribuicao,
         data: dataTransacao,
@@ -118,8 +121,7 @@ class _ContribuicaoState extends State<Contribuicao> {
         Navigator.pop(context); // Volta para o Dashboard do Cofre
     } else {
         final String msg = detalhesProvider.errorMessage ?? 'Falha ao registrar contribuição. Verifique a conexão.';
-    
-    _showSnackBar(msg, isError: true);
+        _showSnackBar(msg, isError: true);
     }
   }
 
