@@ -86,23 +86,24 @@ class _LoginState extends State<Login> {
                           child: Text('Recuperação de Senha', style: GoogleFonts.poppins(fontSize: 12, color: const Color.fromARGB(255, 0, 0, 0), decoration: TextDecoration.underline)),
                         ),
                       ),
+                      ElevatedButton(
+                        onPressed: isLoading ? null : () async {
+                          final authStore = context.read<AuthStore>();
+
+                          bool sucesso = await authStore.signIn(
+                                _emailController.text.trim(),
+                                _passwordController.text.trim(),
+                              );
+
+                          if (!context.mounted) return;
+
+                          if (!sucesso) {
+                            String? erroCru = authStore.errorMessage;
+                            
+                            FeedbackHelper.mostrarErro(context, erroCru);
+                          }
+                        }, 
                       
-                      onPressed: isLoading ? null : () async {
-                        final authStore = context.read<AuthStore>();
-
-                        bool sucesso = await authStore.signIn(
-                              _emailController.text.trim(),
-                              _passwordController.text.trim(),
-                            );
-
-                        if (!context.mounted) return;
-
-                        if (!sucesso) {
-                          String? erroCru = authStore.errorMessage;
-                          
-                          FeedbackHelper.mostrarErro(context, erroCru);
-                        }
-                      }, 
 
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1E90FF),
@@ -110,6 +111,8 @@ class _LoginState extends State<Login> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8.0),
                         ),
+                      ),
+                      
                         child: isLoading
                             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                             : Text('Login', style: GoogleFonts.poppins(fontSize: 18, color: Colors.white)),
