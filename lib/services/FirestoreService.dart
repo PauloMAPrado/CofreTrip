@@ -304,6 +304,37 @@ class FirestoreService {
     }
   }
 
+  /// Busca perfis de Usuario para uma lista de UIDs, usando chunking.
+  Future<List<Usuario>> getUsuariosByIds(List<String> uids) async {
+    if (uids.isEmpty) return [];
+
+    final List<Usuario> todosOsUsuarios = [];
+    // O limite máximo para 'whereIn' no Firestore é 10.
+    const int chunkSize = 10; 
+
+    // Itera a lista de UIDs em blocos de 10
+    for (int i = 0; i < uids.length; i += chunkSize) {
+        
+        // Define o fim do bloco, garantindo que não ultrapasse o tamanho da lista
+        final List<String> chunk = uids.sublist(
+            i, 
+            (i + chunkSize > uids.length) ? uids.length : i + chunkSize
+        );
+
+        // Executa a consulta APENAS para este pedaço de 10 UIDs
+        final snapshot = await _db
+            .collection('users')
+            .where(FieldPath.documentId, whereIn: chunk)
+            .get();
+        
+        // Adiciona os resultados (com casting seguro) à lista final
+        todosOsUsuarios.addAll(
+            snapshot.docs.map((doc) => Usuario.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>)).toList(),
+        );
+    }
+    return todosOsUsuarios;
+  }
+
 //====================== Membros e Convites implementado ===================
 
 }
