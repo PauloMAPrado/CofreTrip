@@ -42,9 +42,8 @@ class _CofreState extends State<Cofre> {
   }
 
   // Função que inicia a busca de dados
-  void _carregarDados() {
-    // Chama o método no Provider, passando o ID
-    Provider.of<DetalhesCofreProvider>(context, listen: false)
+  Future<void> _carregarDados() async {
+    await Provider.of<DetalhesCofreProvider>(context, listen: false)
         .carregarDadosCofre(widget.cofreId);
   }
 
@@ -172,11 +171,12 @@ class _CofreState extends State<Cofre> {
                               // Passa o ID para a tela de Contribuição
                               builder: (context) => Contribuicao(cofreId: widget.cofreId), 
                             ),
-                          ).then((_) {
-                            // Recarrega os dados ao voltar, garantindo que o saldo seja atualizado.
-                            _carregarDados();
+                          ).then((_) { 
+                            _carregarDados(); // Chama a recarga de dados do Cofre.dart
                           });
-                        },
+                          },
+                          
+                        
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color.fromARGB(255, 255, 187, 0),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
