@@ -4,7 +4,10 @@ import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
 import 'package:intl/intl.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart'; 
-
+import 'package:provider/provider.dart';
+import 'home.dart'; 
+import 'package:travelbox/controllers/cofreProvider.dart';
+import 'package:travelbox/services/authProvider.dart';
 
 class Criacofre extends StatefulWidget {
   const Criacofre({super.key});
@@ -19,19 +22,14 @@ class _CriacofreState extends State<Criacofre> {
   final TextEditingController _dataInicioController = TextEditingController();
   final TextEditingController _valorAlvoController = TextEditingController();
   
-  // --- Formatadores e Variáveis de Estado ---
-  final DateFormat _dateFormat = DateFormat('dd/MM/yyyy'); // Formatador para exibir a data
-  
-  // Inicialização do formatador de máscara para R$
+  // --- Formatadores ---
+  final DateFormat _dateFormat = DateFormat('dd/MM/yyyy');
   final _currencyMask = MaskTextInputFormatter(
-    mask: '#.###.###,00', // Máscara que aceita até 9.999.999,99
+    mask: '#.###.###,00', 
     filter: {"#": RegExp(r'[0-9]')},
     type: MaskAutoCompletionType.lazy,
   );
   
-  // Placeholder de carregamento (substitua pelo seu Provider)
-  // O const é removido aqui, pois o valor deve ser dinâmico.
-  // bool _isLoading = false;
 
   void _showSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;
@@ -54,26 +52,26 @@ class _CriacofreState extends State<Criacofre> {
       helpText: 'Selecione a Data de Início',
     );
     if (picked != null) {
-      // Salva a data no formato YYYY-MM-DD no controlador (para o backend)
       _dataInicioController.text = DateFormat('yyyy-MM-dd').format(picked);
     }
   }
 
-  // --- Lógica da View: Apenas "dispara" o evento ---
-  void _handleCreateCofre() {
-    // 1. Pega os dados da UI
+  // --- Lógica Principal: Dispara o evento (SÍNCRONA) ---
+  void _handleCreateCofre() async {
+    
+    // 1. Pega os dados BRUTOS da UI
     final nome = _nomeController.text.trim();
-    final dataInicio = _dataInicioController.text.trim();
-    final valorAlvoFormatado = _valorAlvoController.text.trim(); 
+    final dataInicioRaw = _dataInicioController.text.trim(); 
+    final valorAlvoRaw = _valorAlvoController.text.trim(); 
 
-    // 2. Validação básica de preenchimento
-    if (nome.isEmpty || dataInicio.isEmpty || valorAlvoFormatado.isEmpty) {
+    // 2. Validação básica de preenchimento (apenas Strings vazias)
+    if (nome.isEmpty || dataInicioRaw.isEmpty || valorAlvoRaw.isEmpty) {
       _showSnackBar('Preencha todos os campos.', isError: true);
       return;
     }
 
-    // 3. Validação e Limpeza do Valor Alvo (para double)
-    final cleanValorAlvo = valorAlvoFormatado
+    // 3. Validação e Limpeza do Valor Alvo
+    final cleanValorAlvo = valorAlvoRaw
         .replaceAll('R\$', '')
         .replaceAll('.', '') // Remove ponto de milhar
         .replaceAll(',', '.') // Converte vírgula para ponto decimal
@@ -86,19 +84,36 @@ class _CriacofreState extends State<Criacofre> {
       return;
     }
 
-    // 4. "Dispara" o evento para o gerenciador de estado (Exemplo)
-    
-    // TODO: Chame seu gerenciador de estado (Provider) aqui
-    /*
-    context.read<SeuCofreProvider>().createNewCofre(
-      nome: nome,
-      dataInicio: dataInicio, 
-      valorAlvo: parsedValorAlvo, // Passa o double validado
-    );
-    */
+    // --- ACESSA PROVIDERS E VERIFICAÇÃO DE SEGURANÇA ---
+    final cofreProvider = Provider.of<CofreProvider>(context, listen: false);
+    final authStore = Provider.of<AuthStore>(context, listen: false);
 
-    // Exemplo de sucesso (remova isto quando o provider for conectado)
-    _showSnackBar('Validação OK! Cofre: $nome, Valor: R\$ ${parsedValorAlvo.toStringAsFixed(2)}', isError: false);
+    // 4. VERIFICAÇÃO DE USUÁRIO (Corrigido para usar a checagem completa de ID)
+    if (authStore.usuario?.id?.isNotEmpty != true) {
+        _showSnackBar('O perfil não foi carregado. Tente novamente.', isError: true);
+        return;
+    }
+    
+    final String userId = authStore.usuario!.id!; // Agora é seguro usar '!'
+    
+    // 5. DISPARA A CRIAÇÃO NO PROVIDER
+    bool sucesso = await cofreProvider.criarCofre(
+    nome: nome, 
+    valorPlanoRaw: valorAlvoRaw, // Corrigido para a chamada do provider
+    dataInicioRaw: dataInicioRaw, // Passa a String bruta
+    userId: userId,
+    );
+    
+    // 6. AVALIA O RESULTADO E NAVEGA
+    if (sucesso && mounted) {
+        _showSnackBar('Cofre criado com sucesso!', isError: false);
+        // NAVEGAÇÃO FINAL PARA A HOME/LISTA DE VIAGENS
+        Navigator.of(context).pop(
+            MaterialPageRoute(builder: (context) => const Home()), 
+        );
+    } else {
+        _showSnackBar(cofreProvider.errorMessage ?? 'Falha desconhecida ao criar cofre.', isError: true);
+    }
   }
 
   @override
@@ -113,17 +128,18 @@ class _CriacofreState extends State<Criacofre> {
   @override
   Widget build(BuildContext context) {
     
-    // Placeholder de carregamento (substitua pelo seu Provider)
+    // Observa o estado de carregamento do CofreProvider
+    final bool isLoading = context.watch<CofreProvider>().isLoading; 
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1E90FF), // Mantido const aqui é seguro
+      backgroundColor: const Color(0xFF1E90FF), 
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Header(), // Removido 'const' para evitar o warning
+          Header(), // A chamada do widget
           Expanded(
             child: Container(
-              decoration: const BoxDecoration( // Mantido const aqui é seguro
+              decoration: const BoxDecoration( 
                 color: Colors.white,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(50),
@@ -168,8 +184,7 @@ class _CriacofreState extends State<Criacofre> {
 
                       // DATA DE INÍCIO (Seletor)
                       GestureDetector(
-                        // LÓGICA CORRIGIDA: Usa a função anônima para chamar _selectDate(context)
-                        onTap: () => _selectDate(context), 
+                        onTap: isLoading ? null : () => _selectDate(context), // Desabilita no loading
                         child: AbsorbPointer( // Impede a edição direta do campo
                           child: TextField(
                             controller: _dataInicioController, 
@@ -214,7 +229,7 @@ class _CriacofreState extends State<Criacofre> {
 
                       // BOTÃO CONFIRMAR
                       ElevatedButton(
-                        onPressed: _handleCreateCofre, 
+                        onPressed: isLoading ? null : _handleCreateCofre, // Dispara a função síncrona
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1E90FF),
                           padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -222,7 +237,12 @@ class _CriacofreState extends State<Criacofre> {
                             borderRadius: BorderRadius.circular(8.0),
                           ),
                         ),
-                        child: Text(
+                        child: isLoading 
+                            ? const SizedBox( 
+                                width: 24, height: 24, 
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+                              )
+                            : Text(
                                 'Confirmar',
                                 style: GoogleFonts.poppins(
                                   fontSize: 16.0,
@@ -238,7 +258,7 @@ class _CriacofreState extends State<Criacofre> {
               ), 
             ), 
           ), 
-          Footbarr(), // Removido 'const' para evitar o warning
+          Footbarr(), 
         ],
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 
+
 class Cofre {
   // ID privado, final, mas anulável para novos cofres
   final String? id;
@@ -38,14 +39,20 @@ class Cofre {
 
   /// Construtor "Vazio" para criar um novo cofre
   /// Ele já gera o código automaticamente!
-  factory Cofre.novo({required String nome, required int valorPlano}) {
+  factory Cofre.novo({
+    required String nome,
+    required int valorPlano,
+    required DateTime dataViagem, // Corrigido para dataViagem (Data de Início da Viagem)
+  }) {
+    // Note que dataViagem no Model é a data de início da viagem
     return Cofre(
       nome: nome,
       valorPlano: valorPlano,
       despesasTotal: 0,
-      dataCriacao: DateTime.now(),
+      dataCriacao: DateTime.now(), // Data atual
+      dataViagem: dataViagem, // Data de Início da Viagem do formulário
       joinCode: _generateJoinCode(6), // Gera um código de 6 dígitos
-      // 'id' fica nulo
+      // 'id' fica nulo, esperando o Firestore
     );
   }
 

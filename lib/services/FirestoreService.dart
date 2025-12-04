@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_cast
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:travelbox/models/cofre.dart';
 import 'package:travelbox/models/contribuicao.dart';
@@ -36,6 +38,8 @@ class FirestoreService {
     });
   }
 
+  
+
   // ========================== MÉTODOS DE COFRE ========================================
 
   /// Cria um novo cofre E JÁ ADICIONA O CRIADOR COMO ADMIN
@@ -59,7 +63,7 @@ class FirestoreService {
     return cofreComId;
   }
 
-  /// MÉTODO NOVO: Encontra um cofre pelo seu código de entrada
+  /// MÉTODO CORRIGIDO: Encontra um cofre pelo seu código de entrada
   Future<Cofre?> findCofreByCode(String code) async {
     // Busca na coleção 'cofres' onde o 'joinCode' é igual ao código
     final snapshot = await _db
@@ -72,8 +76,12 @@ class FirestoreService {
       return null; // Nenhum cofre encontrado
     }
 
+    // 🎯 CORREÇÃO: Fazemos o casting explícito para DocumentSnapshot<Map<String, dynamic>>
+    // para garantir que o tipo de entrada corresponda ao construtor fromFirestore.
+    final doc = snapshot.docs.first as DocumentSnapshot<Map<String, dynamic>>;
+
     // Retorna o primeiro cofre encontrado
-    return Cofre.fromFirestore(snapshot.docs.first);
+    return Cofre.fromFirestore(doc);
   }
 
   /// MÉTODO NOVO (ou atualizado): Adiciona uma permissão
@@ -180,6 +188,13 @@ class FirestoreService {
         )
         .toList();
   }
+  Future<void> atualizarSaldoCofre(String cofreId, double valorContribuido) async {
+    await _db.collection('cofres').doc(cofreId).update({
+    // 🎯 CRÍTICO: FieldValue.increment() garante que a soma ocorra no servidor
+    // sem risco de sobreposição de dados.
+      'despesasTotal': FieldValue.increment(valorContribuido), 
+  });
+  }
 
   // ----- MÉTODOS DE PERMISSÃO -----
 
@@ -268,6 +283,56 @@ class FirestoreService {
     await _db.collection('convites').doc(conviteId).update({
       'status': novoStatus.name,
     });
+  }
+
+  Future<Cofre?> getCofreById(String cofreId) async {
+    try {
+      // 1. Busca o documento (doc é DocumentSnapshot<Object?> por padrão)
+      final doc = await _db.collection('cofres').doc(cofreId).get();
+      
+      if (doc.exists) {
+        // 2. Faz o casting explícito e seguro, necessário para o construtor do Model
+        final typedDoc = doc as DocumentSnapshot<Map<String, dynamic>>;
+        
+        // 3. Passa o documento tipado para o construtor de fábrica
+        return Cofre.fromFirestore(typedDoc);
+      }
+      return null;
+    } catch (e) {
+      print("Erro ao buscar cofre por ID ($cofreId): $e");
+      return null;
+    }
+  }
+
+  /// Busca perfis de Usuario para uma lista de UIDs, usando chunking.
+  Future<List<Usuario>> getUsuariosByIds(List<String> uids) async {
+    if (uids.isEmpty) return [];
+
+    final List<Usuario> todosOsUsuarios = [];
+    // O limite máximo para 'whereIn' no Firestore é 10.
+    const int chunkSize = 10; 
+
+    // Itera a lista de UIDs em blocos de 10
+    for (int i = 0; i < uids.length; i += chunkSize) {
+        
+        // Define o fim do bloco, garantindo que não ultrapasse o tamanho da lista
+        final List<String> chunk = uids.sublist(
+            i, 
+            (i + chunkSize > uids.length) ? uids.length : i + chunkSize
+        );
+
+        // Executa a consulta APENAS para este pedaço de 10 UIDs
+        final snapshot = await _db
+            .collection('users')
+            .where(FieldPath.documentId, whereIn: chunk)
+            .get();
+        
+        // Adiciona os resultados (com casting seguro) à lista final
+        todosOsUsuarios.addAll(
+            snapshot.docs.map((doc) => Usuario.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>)).toList(),
+        );
+    }
+    return todosOsUsuarios;
   }
 
 //====================== Membros e Convites implementado ===================

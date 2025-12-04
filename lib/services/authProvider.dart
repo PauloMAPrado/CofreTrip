@@ -51,6 +51,12 @@ class AuthStore extends ChangeNotifier {
 
     notifyListeners();
   }
+
+  void resetActionStatus() {
+    _actionStatus = ActionStatus.initial;
+    _errorMessage = null; 
+    notifyListeners();
+  }
   
 
   Future<bool> signIn(String email, String password) async {
@@ -66,7 +72,6 @@ class AuthStore extends ChangeNotifier {
       return true;
     } else {
       _actionStatus = ActionStatus.error;
-      _errorMessage = errorMessage;
       notifyListeners();
       return false;
     }

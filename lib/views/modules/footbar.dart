@@ -2,13 +2,9 @@ import 'package:flutter/material.dart';
 // Seus imports de tela
 import 'package:travelbox/views/home.dart';
 import 'package:travelbox/views/account.dart';
-import 'package:travelbox/views/premium.dart'; // Renomeando de Pro para Premium
-
+import 'package:travelbox/views/premium.dart'; 
 
 class Footbarr extends StatefulWidget {
-  // O Footbarr precisa saber qual tela está ativa no momento.
-  // No entanto, para ser um componente reutilizável, 
-  // ele deve ser implementado no Scaffold principal.
   const Footbarr({super.key});
 
   @override
@@ -16,38 +12,45 @@ class Footbarr extends StatefulWidget {
 }
 
 class _FootbarrState extends State<Footbarr> {
+  // Nota: Em um aplicativo real, este valor deve ser dinâmico (com base na rota atual).
   int _selectedIndex = 1; // 0: Conta, 1: Home (Default), 2: Premium
 
-  // Lista de widgets (corpos das telas) para navegação por índice
-  static final List<Widget> _widgetOptions = <Widget>[
-    const Account(),
-    // Nota: Home (a listagem de viagens) não aceita construtor simples se for o Dashboard.
-    // Você precisará de um widget wrapper se Home exigir dados dinâmicos.
-    const Home(), 
-    const Pro(),
-  ];
 
   void _onItemTapped(int index) {
+    if (_selectedIndex == index) {
+      // Se já estamos na Home, forçamos um reset para o topo da pilha para recarregar
+      if (index == 1) {
+          _navigateToTarget(const Home(), index);
+      }
+      return;
+    }
+    
+    // 1. Atualiza o índice para mudar o ícone
     setState(() {
       _selectedIndex = index;
     });
-    // Opcional: Navegar para a tela principal (se Footbarr não for o Scaffold)
-    // No seu caso, você usará o Navigator.push para demonstração, 
-    // mas o correto é trocar o corpo da tela pai.
-    
-    // COMO VOCÊ JÁ TINHA IMPLEMENTADO (Mas não é o ideal para UX):
+
+    // 2. Define a tela de destino
     Widget targetWidget;
     if (index == 0) {
-      targetWidget = const Account();
+      targetWidget = Account(); // Sem const
     } else if (index == 1) {
-      targetWidget = const Home();
+      targetWidget = Home(); // Sem const
     } else {
-      targetWidget = const Pro();
+      targetWidget = Pro(); // Sem const
     }
 
-    Navigator.push(
-      context,
+    // 3. Navegação
+    _navigateToTarget(targetWidget, index);
+  }
+
+  void _navigateToTarget(Widget targetWidget, int index) {
+    // 🎯 A CORREÇÃO FINAL: Push and Remove Until
+    // Isso limpa a pilha de navegação e força o widget de destino a ser reconstruído, 
+    // disparando o didChangeDependencies para buscar novos dados.
+    Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => targetWidget),
+      (Route<dynamic> route) => false, // Remove TUDO da pilha, exceto a tela de destino
     );
   }
 
@@ -71,12 +74,12 @@ class _FootbarrState extends State<Footbarr> {
           label: 'Premium',
         ),
       ],
-      currentIndex: _selectedIndex, // Marca o item ativo
-      selectedItemColor: const Color(0xFF1E90FF), // Cor Primária
-      unselectedItemColor: Colors.grey[600], // Cor Cinza para Inativo
-      backgroundColor: const Color(0xFFF4F9FB), // Cor de Fundo do seu Container original
-      type: BottomNavigationBarType.fixed, // Garante que todos os itens são exibidos
-      onTap: _onItemTapped, // Função que lida com o clique
+      currentIndex: _selectedIndex, 
+      selectedItemColor: const Color(0xFF1E90FF), 
+      unselectedItemColor: Colors.grey[600],
+      backgroundColor: const Color(0xFFF4F9FB),
+      type: BottomNavigationBarType.fixed, 
+      onTap: _onItemTapped,
     );
   }
 }
