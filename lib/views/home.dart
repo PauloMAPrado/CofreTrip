@@ -16,6 +16,7 @@ class Home extends StatefulWidget {
 
   @override
   _HomeState createState() => _HomeState();
+  
 }
 
 class _HomeState extends State<Home> {
@@ -184,9 +185,11 @@ class _HomeState extends State<Home> {
     final bool isLoading = cofreProvider.isLoading;
     final String? errorMessage = cofreProvider.errorMessage;
 
+
     // Estatísticas (Cálculo)
     final int totalCofres = cofres.length;
     final double totalMetas = cofres.fold(0.0, (sum, cofre) => sum + cofre.valorPlano);
+
 
     final userName = authStore.usuario?.nome ?? "Viajante";
     final String welcomeMessage = "Boas-vindas, $userName!";
