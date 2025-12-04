@@ -49,7 +49,7 @@ class _EntracofreState extends State<Entracofre> {
     
     // --- ACESSA PROVIDERS E VERIFICAÇÃO DE SEGURANÇA ---
     final cofreProvider = Provider.of<CofreProvider>(context, listen: false);
-    final authStore = Provider.of<AuthStore>(context, listen: false);
+    final authStore = Provider.of<AuthStore>( context, listen: false);
 
     // 2. Verifica se o usuário está logado
     if (authStore.usuario?.id == null) {
@@ -145,8 +145,8 @@ class _EntracofreState extends State<Entracofre> {
                       ),
                       // NOVO: Restringe a entrada a caracteres alfanuméricos
                       inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9]')),
-                        LengthLimitingTextInputFormatter(6), // Limita o código a 6 caracteres
+                        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')), 
+                        LengthLimitingTextInputFormatter(6),// Limita o código a 6 caracteres
                       ],
                     ),
 

@@ -95,14 +95,13 @@ class _CriacofreState extends State<Criacofre> {
     }
     
     final String userId = authStore.usuario!.id!; // Agora é seguro usar '!'
-    final int valorPlanoInt = parsedValorAlvo.toInt(); 
     
     // 5. DISPARA A CRIAÇÃO NO PROVIDER
     bool sucesso = await cofreProvider.criarCofre(
-        nome: nome, 
-        valorPlanoRaw: valorAlvoRaw, 
-        dataInicioRaw: dataInicioRaw, 
-        userId: userId,
+    nome: nome, 
+    valorPlanoRaw: valorAlvoRaw, // Corrigido para a chamada do provider
+    dataInicioRaw: dataInicioRaw, // Passa a String bruta
+    userId: userId,
     );
     
     // 6. AVALIA O RESULTADO E NAVEGA

@@ -9,25 +9,32 @@ import 'package:travelbox/services/FirestoreService.dart';
 class Conviteprovider extends ChangeNotifier {
   final FirestoreService _firestoreService;
 
-  bool _isloading = false;
-  String? _errorMensage;
+  // 1. CORREÇÃO: Padronizando _isloading para _isLoading
+  bool _isLoading = false; 
+  
+  // 2. CORREÇÃO: Padronizando o nome do campo de erro
+  String? _errorMessage; 
+  
   List<Convite> _convitesRecebidos = [];
 
   Conviteprovider(this._firestoreService);
 
-  bool get isloading => _isloading;
-  String? get errorMensege => _errorMensage;
+  // 3. CORREÇÃO: Getters públicos padronizados e corrigidos
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage; // ✅ Nome corrigido (errorMensege -> errorMessage)
   List<Convite> get convitesRecebidos => _convitesRecebidos;
 
   Future<void> carregarConvites(String userId) async {
-    _isloading = true;
+    _isLoading = true;
+    // 4. CORREÇÃO: Inicializa o erro corretamente
+    _errorMessage = null; 
     notifyListeners();
     try {
       _convitesRecebidos = await _firestoreService.getConvitesRecebidos(userId);
     } catch (e) {
-      _errorMensage = e.toString();
+      _errorMessage = e.toString();
     }
-    _isloading = false;
+    _isLoading = false;
     notifyListeners();
   }
 
@@ -36,8 +43,8 @@ class Conviteprovider extends ChangeNotifier {
     required String cofreId,
     required String idUsuarioConvidador,
   }) async {
-    _isloading = true;
-    _errorMensage = null;
+    _isLoading = true;
+    _errorMessage = null; // Inicializa antes da ação
     notifyListeners();
 
     try {
@@ -46,7 +53,7 @@ class Conviteprovider extends ChangeNotifier {
       );
 
       if (usuarioDestino == null) {
-        _isloading = false;
+        _isLoading = false;
         notifyListeners();
         return "Usuario com email $emailDestino não encontrado.";
       }
@@ -61,18 +68,21 @@ class Conviteprovider extends ChangeNotifier {
 
       await _firestoreService.criarConvite(novoConvite);
 
-      _isloading = false;
+      _isLoading = false;
       notifyListeners();
-      return null;
+      return null; // Sucesso
     } catch (e) {
-      _isloading = false;
+      // 5. CORREÇÃO: Captura o erro e retorna a mensagem
+      _errorMessage = e.toString();
+      _isLoading = false;
       notifyListeners();
-      return null;
+      return _errorMessage; // Retorna a mensagem de erro para a UI tratar
     }
   }
 
   Future<void> responderConvite(Convite convite, bool aceitar) async {
-    _isloading = true;
+    _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
@@ -92,12 +102,13 @@ class Conviteprovider extends ChangeNotifier {
         await _firestoreService.criarPermissao(perm);
       }
 
+      // 6. Atualiza a lista local após a resposta
       _convitesRecebidos.removeWhere((c) => c.id == convite.id);
     } catch (e) {
-      _errorMensage = e.toString();
+      _errorMessage = e.toString();
     }
 
-    _isloading = false;
+    _isLoading = false;
     notifyListeners();
   }
 }

@@ -8,7 +8,7 @@ import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
 import 'package:travelbox/views/historicoContr.dart';
 import 'package:travelbox/views/listaUser.dart';
-import 'package:travelbox/models/cofre.dart' as CofreModel;
+import 'package:travelbox/models/cofre.dart' as cofre_model;
 
 // Importe o seu modelo de dados e o provider de detalhes
 import '../controllers/detalhesCofreProvider.dart';
@@ -78,7 +78,7 @@ class _CofreState extends State<Cofre> {
   Widget build(BuildContext context) {
     // 🎯 LÊ O ESTADO: Escuta as mudanças no estado do cofre
     final detalhesProvider = context.watch<DetalhesCofreProvider>();
-    final CofreModel.Cofre? cofre = detalhesProvider.cofreAtivo;
+    final cofre_model.Cofre? cofre = detalhesProvider.cofreAtivo;
     final bool isLoading = detalhesProvider.isLoading;
     final String? errorMessage = detalhesProvider.errorMessage;
 
@@ -143,9 +143,9 @@ class _CofreState extends State<Cofre> {
                         ),
                         child: Column(
                           children: [
-                            Text('Meta: ${valorAlvoFormatado}', style: GoogleFonts.poppins(fontSize: 16.0)),
+                            Text('Meta: $valorAlvoFormatado', style: GoogleFonts.poppins(fontSize: 16.0)),
                             const SizedBox(height: 10),
-                            Text('Arrecadado: ${valorAtualFormatado}', style: GoogleFonts.poppins(fontSize: 20.0, fontWeight: FontWeight.bold, color: const Color(0xFF1E90FF))),
+                            Text('Arrecadado: $valorAtualFormatado', style: GoogleFonts.poppins(fontSize: 20.0, fontWeight: FontWeight.bold, color: const Color(0xFF1E90FF))),
                             const SizedBox(height: 20),
                             LinearProgressIndicator(
                               value: progress,

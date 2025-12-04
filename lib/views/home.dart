@@ -6,24 +6,24 @@ import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+// Imports de lógica
 import '../controllers/cofreProvider.dart'; 
 import '../services/authProvider.dart'; 
+import '../controllers/ConviteProvider.dart'; // NOVO: Para buscar convites
 import '../models/cofre.dart' as CofreModel; 
 import 'cofre.dart'; 
+import 'convitesrecebidos.dart'; // Importa a tela de Notificações
 
 class Home extends StatefulWidget {
   const Home({super.key});
 
   @override
   _HomeState createState() => _HomeState();
-  
 }
 
 class _HomeState extends State<Home> {
-  // Flag para controle de carregamento inicial (Sinconização)
   bool _isInitialLoad = true; 
   
-  // Formatador de moeda
   final NumberFormat _currencyFormat = NumberFormat.currency(
     locale: 'pt_BR', 
     symbol: 'R\$',
@@ -38,16 +38,57 @@ class _HomeState extends State<Home> {
     if (_isInitialLoad) {
       final authStore = Provider.of<AuthStore>(context, listen: false);
       final cofreProvider = Provider.of<CofreProvider>(context, listen: false);
+      final conviteProvider = Provider.of<Conviteprovider>(context, listen: false); 
       
       if (authStore.usuario?.id?.isNotEmpty ?? false) {
         final userId = authStore.usuario!.id!;
+        
+        // 🎯 DISPARA A BUSCA DE COFRES E CONVITES
         cofreProvider.carregarCofres(userId); 
+        conviteProvider.carregarConvites(userId);
       }
       
       _isInitialLoad = false;
     }
   }
   
+  // --- Widget de Alerta de Convites Pendentes ---
+  Widget _buildInviteAlert(BuildContext context, int count) {
+    if (count == 0) return const SizedBox.shrink();
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 20),
+      color: Colors.red.shade600, // Cor de alerta
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: InkWell(
+        onTap: () {
+          // 🎯 NAVEGAÇÃO: Para a tela de convites recebidos
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ConvitesRecebidos()), 
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              const Icon(Icons.mail_outline, color: Colors.white, size: 30),
+              const SizedBox(width: 15),
+              Expanded(
+                child: Text(
+                  'Você tem $count convite(s) pendente(s)! Toque para responder.',
+                  style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // --- Widget para Exibir Cada Cofre na Lista (Item) ---
   Widget _buildCofreItem(BuildContext context, CofreModel.Cofre cofre) {
     
@@ -124,14 +165,12 @@ class _HomeState extends State<Home> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // BOTÃO CRIAR COFRE (AZUL PRIMÁRIO)
           ElevatedButton(
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const Criacofre())),
             style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)), padding: const EdgeInsets.symmetric(vertical: 16.0)),
             child: Text('Criar Cofre', style: GoogleFonts.poppins(fontSize: 16.0, color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(height: 16.0),
-          // BOTÃO ENTRAR COM CÓDIGO (LARANJA/AMARELO)
           ElevatedButton(
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const Entracofre())),
             style: ElevatedButton.styleFrom(backgroundColor: highlightColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)), padding: const EdgeInsets.symmetric(vertical: 16.0)),
@@ -168,10 +207,40 @@ class _HomeState extends State<Home> {
     );
   }
 
-  // --- Cartão de Estatísticas Simples (Omitido para brevidade, mas deve existir no código) ---
+  // --- Cartão de Estatísticas Simples (Omitido para brevidade) ---
   Widget _buildStatsCard(int totalCofres, double totalMetas) {
-    // ... (Implementação do Cartão de Estatísticas)
-    return const SizedBox.shrink(); // Placeholder
+    // Cálculo do total de arrecadação de todos os cofres
+    final double totalArrecadado = 100.0; // Placeholder
+    
+    return Card(
+      elevation: 6,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      color: const Color(0xFF1E90FF), // Fundo Primário
+      margin: const EdgeInsets.only(bottom: 20, top: 10),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            Column(
+              children: [
+                Text('Total de Viagens', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14)),
+                const SizedBox(height: 5),
+                Text(totalCofres.toString(), style: GoogleFonts.lato(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            Container(width: 1, height: 40, color: Colors.white30),
+            Column(
+              children: [
+                Text('Total Arrecadado', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14)),
+                const SizedBox(height: 5),
+                Text(_currencyFormat.format(totalArrecadado), style: GoogleFonts.lato(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
 
@@ -180,16 +249,16 @@ class _HomeState extends State<Home> {
     // 1. Obtém o estado
     final cofreProvider = context.watch<CofreProvider>();
     final authStore = context.watch<AuthStore>();
+    final conviteProvider = context.watch<Conviteprovider>(); // Lendo o Provider de Convites
 
     final List<CofreModel.Cofre> cofres = cofreProvider.cofres;
     final bool isLoading = cofreProvider.isLoading;
     final String? errorMessage = cofreProvider.errorMessage;
 
-
-    // Estatísticas (Cálculo)
+    // 2. Cálculo de dados e contagens
     final int totalCofres = cofres.length;
     final double totalMetas = cofres.fold(0.0, (sum, cofre) => sum + cofre.valorPlano);
-
+    final int convitesCount = conviteProvider.convitesRecebidos.length; // Contagem de convites
 
     final userName = authStore.usuario?.nome ?? "Viajante";
     final String welcomeMessage = "Boas-vindas, $userName!";
@@ -215,10 +284,7 @@ class _HomeState extends State<Home> {
             child: Container(
               decoration: const BoxDecoration(
                 color: Color(0xFFF4F9FB),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(50.0),
-                  topRight: Radius.circular(50.0),
-                ),
+                borderRadius: BorderRadius.only(topLeft: Radius.circular(50.0), topRight: Radius.circular(50.0)),
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -227,17 +293,13 @@ class _HomeState extends State<Home> {
                   children: [
                     const SizedBox(height: 30.0),
                     // SAUDAÇÃO
-                    Text(
-                      welcomeMessage,
-                      textAlign: TextAlign.left,
-                      style: GoogleFonts.lato(fontSize: 20.0, fontWeight: FontWeight.bold, color: const Color(0xFF1E90FF)),
-                    ),
+                    Text(welcomeMessage, textAlign: TextAlign.left, style: GoogleFonts.lato(fontSize: 20.0, fontWeight: FontWeight.bold, color: const Color(0xFF1E90FF))),
                     const SizedBox(height: 10.0),
-                    Text(
-                      'Minhas Viagens',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.lato(fontSize: 24.0, fontWeight: FontWeight.bold, color: const Color(0xFF333333)),
-                    ),
+                    
+                    // 🎯 ALERTA DE CONVITE APARECE AQUI!
+                    _buildInviteAlert(context, convitesCount), 
+
+                    Text('Suas Viagens', textAlign: TextAlign.center, style: GoogleFonts.lato(fontSize: 24.0, fontWeight: FontWeight.bold, color: const Color(0xFF333333))),
                     const SizedBox(height: 10.0),
 
                     // CARTÃO DE ESTATÍSTICAS
