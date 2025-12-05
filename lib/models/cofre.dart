@@ -3,7 +3,6 @@ import 'dart:math';
 
 
 class Cofre {
-  // ID privado, final, mas anulável para novos cofres
   final String? id;
 
   String nome;
@@ -25,7 +24,6 @@ class Cofre {
     required this.joinCode,
   });
 
-  // Helper para gerar um código aleatório (você pode mover para outro lugar)
   static String _generateJoinCode(int length) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     Random rnd = Random();
@@ -37,14 +35,11 @@ class Cofre {
     );
   }
 
-  /// Construtor "Vazio" para criar um novo cofre
-  /// Ele já gera o código automaticamente!
   factory Cofre.novo({
     required String nome,
     required int valorPlano,
-    required DateTime dataViagem, // Corrigido para dataViagem (Data de Início da Viagem)
+    DateTime? dataViagem,
   }) {
-    // Note que dataViagem no Model é a data de início da viagem
     return Cofre(
       nome: nome,
       valorPlano: valorPlano,
@@ -65,32 +60,33 @@ class Cofre {
       id: doc.id,
       nome: data['nome'] as String,
       descricao: data['descricao'] as String?,
-      valorPlano: data['valor_plano'] as int,
-      despesasTotal: data['despesas_total'] as int,
-      // Converte o Timestamp do Firebase para DateTime
+      
+      // CORREÇÃO 2: Conversão segura de num para int
+      valorPlano: (data['valor_plano'] as num).toInt(),
+      despesasTotal: (data['despesas_total'] as num).toInt(),
+      
       dataCriacao: (data['data_criacao'] as Timestamp).toDate(),
       dataViagem: data['data_viagem'] != null
           ? (data['data_viagem'] as Timestamp).toDate()
           : null,
-      joinCode: data['joinCode'] as String,
+      
+      // Segurança extra: se não tiver joinCode (cofres antigos), gera vazio
+      joinCode: data['joinCode'] as String? ?? '', 
     );
   }
 
-  /// Converte o objeto Cofre para um mapa JSON (para enviar ao Firebase).
   Map<String, dynamic> toJson() {
     return {
       'nome': nome,
       'descricao': descricao,
       'valor_plano': valorPlano,
       'despesas_total': despesasTotal,
-      // O Firebase converte DateTime para Timestamp automaticamente
       'data_criacao': dataCriacao,
       'data_viagem': dataViagem,
-      'joinCode':joinCode,
+      'joinCode': joinCode,
     };
   }
 
-  /// Cria uma cópia do cofre com valores atualizados.
   Cofre copyWith({
     String? id,
     String? nome,
@@ -102,7 +98,8 @@ class Cofre {
     String? joinCode,
   }) {
     return Cofre(
-      id: id, // Preserva o ID original
+      // CORREÇÃO 1: Bug crítico resolvido (usando ??)
+      id: id ?? this.id, 
       nome: nome ?? this.nome,
       descricao: descricao ?? this.descricao,
       valorPlano: valorPlano ?? this.valorPlano,
