@@ -11,7 +11,7 @@ import 'package:travelbox/views/listaUser.dart';
 import 'package:travelbox/models/cofre.dart' as cofre_model;
 
 // Importe o seu modelo de dados e o provider de detalhes
-import '../controllers/detalhesCofreProvider.dart';
+import '../stores/detalhesCofreStore.dart';
 
 class Cofre extends StatefulWidget { // Mantenha como StatefulWidget para initState
   final String cofreId; 
@@ -43,7 +43,7 @@ class _CofreState extends State<Cofre> {
 
   // Função que inicia a busca de dados
   Future<void> _carregarDados() async {
-    await Provider.of<DetalhesCofreProvider>(context, listen: false)
+    await Provider.of<DetalhesCofreStore>(context, listen: false)
         .carregarDadosCofre(widget.cofreId);
   }
 
@@ -77,7 +77,7 @@ class _CofreState extends State<Cofre> {
   @override
   Widget build(BuildContext context) {
     // 🎯 LÊ O ESTADO: Escuta as mudanças no estado do cofre
-    final detalhesProvider = context.watch<DetalhesCofreProvider>();
+    final detalhesProvider = context.watch<DetalhesCofreStore>();
     final cofre_model.Cofre? cofre = detalhesProvider.cofreAtivo;
     final bool isLoading = detalhesProvider.isLoading;
     final String? errorMessage = detalhesProvider.errorMessage;

@@ -7,9 +7,9 @@ import 'package:travelbox/views/modules/header.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 // Imports de lógica
-import '../controllers/cofreProvider.dart'; 
-import '../services/authProvider.dart'; 
-import '../controllers/ConviteProvider.dart'; // NOVO: Para buscar convites
+import '../stores/cofreStore.dart'; 
+import '../stores/authStore.dart'; 
+import '../stores/ConviteStore.dart'; // NOVO: Para buscar convites
 import '../models/cofre.dart' as CofreModel; 
 import 'cofre.dart'; 
 import 'convitesrecebidos.dart'; // Importa a tela de Notificações
@@ -37,8 +37,8 @@ class _HomeState extends State<Home> {
     
     if (_isInitialLoad) {
       final authStore = Provider.of<AuthStore>(context, listen: false);
-      final cofreProvider = Provider.of<CofreProvider>(context, listen: false);
-      final conviteProvider = Provider.of<Conviteprovider>(context, listen: false); 
+      final cofreProvider = Provider.of<CofreStore>(context, listen: false);
+      final conviteProvider = Provider.of<ConviteStore>(context, listen: false); 
       
       if (authStore.usuario?.id?.isNotEmpty ?? false) {
         final userId = authStore.usuario!.id!;
@@ -247,9 +247,9 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     // 1. Obtém o estado
-    final cofreProvider = context.watch<CofreProvider>();
+    final cofreProvider = context.watch<CofreStore>();
     final authStore = context.watch<AuthStore>();
-    final conviteProvider = context.watch<Conviteprovider>(); // Lendo o Provider de Convites
+    final conviteProvider = context.watch<ConviteStore>(); // Lendo o Provider de Convites
 
     final List<CofreModel.Cofre> cofres = cofreProvider.cofres;
     final bool isLoading = cofreProvider.isLoading;

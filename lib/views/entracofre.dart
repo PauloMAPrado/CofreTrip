@@ -4,8 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
-import '../controllers/cofreProvider.dart'; // Seu CofreProvider
-import '../services/authProvider.dart'; // Seu AuthStore
+import '../stores/cofreStore.dart'; // Seu CofreProvider
+import '../stores/authStore.dart'; // Seu AuthStore
 import 'home.dart';
 class Entracofre extends StatefulWidget {
   const Entracofre({super.key});
@@ -48,7 +48,7 @@ class _EntracofreState extends State<Entracofre> {
     }
     
     // --- ACESSA PROVIDERS E VERIFICAÇÃO DE SEGURANÇA ---
-    final cofreProvider = Provider.of<CofreProvider>(context, listen: false);
+    final cofreProvider = Provider.of<CofreStore>(context, listen: false);
     final authStore = Provider.of<AuthStore>( context, listen: false);
 
     // 2. Verifica se o usuário está logado

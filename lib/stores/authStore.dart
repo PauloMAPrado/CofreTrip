@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:travelbox/services/AuthService.dart';
-import 'package:travelbox/services/FirestoreService.dart';
-import 'package:travelbox/models/Usuario.dart';
+import 'package:travelbox/services/authService.dart';
+import 'package:travelbox/services/firestoreService.dart';
+import 'package:travelbox/models/usuario.dart';
 
 // Status da sessão. Dita se o usuario esta logado ou não.
 enum SessionStatus { uninitialized, authenticated, unauthenticated }
@@ -131,7 +131,7 @@ class AuthStore extends ChangeNotifier {
 
     _errorMessage = await _authService.resetPassword(email: email);
 
-    if (errorMessage == null) {
+    if (_errorMessage == null) {
       _actionStatus = ActionStatus.success;
     } else {
       _actionStatus = ActionStatus.error;

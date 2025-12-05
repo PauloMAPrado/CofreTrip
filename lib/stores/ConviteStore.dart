@@ -2,31 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:travelbox/models/convite.dart';
 import 'package:travelbox/models/permissao.dart';
 import 'package:travelbox/models/statusConvite.dart';
-import 'package:travelbox/models/Usuario.dart';
+import 'package:travelbox/models/usuario.dart';
 import 'package:travelbox/models/nivelPermissao.dart';
-import 'package:travelbox/services/FirestoreService.dart';
+import 'package:travelbox/services/firestoreService.dart';
 
-class Conviteprovider extends ChangeNotifier {
+class ConviteStore extends ChangeNotifier {
   final FirestoreService _firestoreService;
 
-  // 1. CORREÇÃO: Padronizando _isloading para _isLoading
   bool _isLoading = false; 
-  
-  // 2. CORREÇÃO: Padronizando o nome do campo de erro
   String? _errorMessage; 
-  
   List<Convite> _convitesRecebidos = [];
-
-  Conviteprovider(this._firestoreService);
-
-  // 3. CORREÇÃO: Getters públicos padronizados e corrigidos
+  ConviteStore(this._firestoreService);
+  
+  
+  
+  // Getters
   bool get isLoading => _isLoading;
-  String? get errorMessage => _errorMessage; // ✅ Nome corrigido (errorMensege -> errorMessage)
+  String? get errorMessage => _errorMessage; 
   List<Convite> get convitesRecebidos => _convitesRecebidos;
 
+
+  /// Carrega os convites pendentes do usuário
   Future<void> carregarConvites(String userId) async {
     _isLoading = true;
-    // 4. CORREÇÃO: Inicializa o erro corretamente
     _errorMessage = null; 
     notifyListeners();
     try {
@@ -38,24 +36,31 @@ class Conviteprovider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Envia um convite por e-mail
   Future<String?> enviarConvite({
     required String emailDestino,
     required String cofreId,
     required String idUsuarioConvidador,
   }) async {
     _isLoading = true;
-    _errorMessage = null; // Inicializa antes da ação
+    _errorMessage = null; 
     notifyListeners();
 
     try {
       Usuario? usuarioDestino = await _firestoreService.buscarUsuarioPorEmail(
-        emailDestino,
+        emailDestino.trim(),
       );
 
       if (usuarioDestino == null) {
         _isLoading = false;
         notifyListeners();
         return "Usuario com email $emailDestino não encontrado.";
+      }
+
+      if (usuarioDestino.id == idUsuarioConvidador) {
+         _isLoading = false;
+         notifyListeners();
+         return "Você não pode convidar a si mesmo.";
       }
 
       Convite novoConvite = Convite(
@@ -80,6 +85,7 @@ class Conviteprovider extends ChangeNotifier {
     }
   }
 
+  /// Aceita ou Recusa um convite
   Future<void> responderConvite(Convite convite, bool aceitar) async {
     _isLoading = true;
     _errorMessage = null;

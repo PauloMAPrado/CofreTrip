@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:travelbox/services/authProvider.dart';
+import 'package:travelbox/stores/authStore.dart';
 import 'package:travelbox/utils/feedbackHelper.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:travelbox/views/modules/header.dart';
@@ -32,6 +33,19 @@ class _RegisterState extends State<Register> {
     filter: {"#": RegExp(r'[0-9]')},
     type: MaskAutoCompletionType.lazy,
   );
+
+  bool _hasMinLength = false;
+  bool _hasUppercase = false;
+  bool _hasDigits = false;
+
+  void _updatePasswordValidation(String value) {
+    setState(() {
+      _hasMinLength = value.length >= 6;
+      _hasUppercase = value.contains(RegExp(r'[A-Z]'));
+      _hasDigits = value.contains(RegExp(r'[0-9]'));
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +94,7 @@ class _RegisterState extends State<Register> {
                         icon: Icons.person,
                         isLoading: isLoading,
                       ),
+                      const SizedBox(height: 16.0),
 
                       _buildTextField(
                         controller: _cpfController,
@@ -89,6 +104,7 @@ class _RegisterState extends State<Register> {
                         isLoading: isLoading,
                         inputFormatters: [cpfFormatter],
                       ),
+                      const SizedBox(height: 16.0),
 
                       _buildTextField(
                         controller: _emailController,
@@ -97,6 +113,7 @@ class _RegisterState extends State<Register> {
                         inputType: TextInputType.emailAddress,
                         isLoading: isLoading,
                       ),
+                      const SizedBox(height: 16.0),
 
                       _buildTextField(
                         controller: _telefoneController,
@@ -105,118 +122,39 @@ class _RegisterState extends State<Register> {
                         isLoading: isLoading,
                         inputFormatters: [_phoneMask],
                       ),
+                      const SizedBox(height: 16.0),
 
                       _buildTextField(
                         controller: _senhaController,
                         label: 'Senha',
                         icon: Icons.person,
                         isLoading: isLoading,
+                        isObscure: true,
+                        onChange: _updatePasswordValidation,
                       ),
 
-/*     +++++++++++++++++++ VERSÃO ANTIGA DO CODIGO CASO ALGO DE MERDA!!!!!!!! ++++++++++++++++++++++++++++
-                      
-                      
-                      TextField(
-                        controller: _nomeController, 
-                        keyboardType: TextInputType.name,
-                        decoration: InputDecoration(
-                          labelText: 'Nome',
-                          labelStyle: GoogleFonts.poppins(),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                        child: Column(
+                          children: [
+                            _buildPasswordCriteria("Mínimo de 6 caracteres", _hasMinLength),
+                            _buildPasswordCriteria("Pelo menos uma letra maiúscula", _hasUppercase),
+                            _buildPasswordCriteria("Pelo menos um número", _hasDigits),
+                          ],
                         ),
-                        style: GoogleFonts.poppins(),
-                      ),
-                      const SizedBox(height: 16.0), // Adicionado 'const'
-                      //CPF
-                      TextField(
-                        controller: _cpfController, // NOVO: Controlador
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'CPF',
-                          labelStyle: GoogleFonts.poppins(),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                        style: GoogleFonts.poppins(),
-                      ),
-                      const SizedBox(height: 16.0), // Adicionado 'const'
-                      //Email
-                      TextField(
-                        controller: _emailController, // NOVO: Controlador
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          labelText: 'Email',
-                          labelStyle: GoogleFonts.poppins(),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                        style: GoogleFonts.poppins(),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.deny(RegExp(r'\s|,|;')),
-                        ],
-                      ),
-                      const SizedBox(height: 16.0), // Adicionado 'const'
-                      //Telefone
-                      TextField(
-                        controller: _telefoneController, // NOVO: Controlador
-                        keyboardType: TextInputType.phone,
-                        decoration: InputDecoration(
-                          labelText: 'Telefone',
-                          labelStyle: GoogleFonts.poppins(),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                        style: GoogleFonts.poppins(),
-                        inputFormatters: [_phoneMask],
-                      ),
-                      const SizedBox(height: 16.0), // Adicionado 'const'
-                      //Senha
-                      TextField(
-                        controller: _senhaController, // NOVO: Controlador
-                        obscureText: true,
-                        decoration: InputDecoration(
-                          labelText: 'Senha',
-                          labelStyle: GoogleFonts.poppins(),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                        style: GoogleFonts.poppins(),
-                      ),
-                      const SizedBox(height: 16.0), // Adicionado 'const'
-                      //Confirmar Senha
-                      TextField(
-                        controller:
-                            _confirmarSenhaController, // NOVO: Controlador
-                        obscureText: true,
-                        decoration: InputDecoration(
-                          labelText: 'Confirmar Senha',
-                          labelStyle: GoogleFonts.poppins(),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                        style: GoogleFonts.poppins(),
                       ),
 
-*/
+                      const SizedBox(height: 8.0),
+
+                      // CONFIRMAR SENHA
+                      _buildTextField(
+                        controller: _confirmarSenhaController,
+                        label: 'Confirmar Senha',
+                        icon: Icons.lock_outline,
+                        isLoading: isLoading,
+                        isObscure: true,
+                      ),
+
                       const SizedBox(height: 45.0), // Adicionado 'const'
                       //Botão de Cadastro
                       ElevatedButton(
@@ -224,6 +162,27 @@ class _RegisterState extends State<Register> {
                             ? null
                             : () async {
                                 FocusScope.of(context).unfocus();
+
+                                // 1. Validação: Campos Vazios
+                                if (_nomeController.text.isEmpty ||
+                                    _emailController.text.isEmpty ||
+                                    _senhaController.text.isEmpty) {
+                                  FeedbackHelper.mostrarErro(context, "Preencha todos os campos obrigatórios.");
+                                  return;
+                                }
+
+                                // 2. Validação: Requisitos da Senha
+                                if (!_hasMinLength || !_hasUppercase || !_hasDigits) {
+                                   FeedbackHelper.mostrarErro(context, "A senha não atende aos requisitos mínimos.");
+                                   return;
+                                }
+                                
+                                // 3. Validação: Senhas Iguais
+                                if (_senhaController.text != _confirmarSenhaController.text) {
+                                  FeedbackHelper.mostrarErro(context, "As senhas não coincidem.");
+                                  return;
+                                }
+
 
                                 final authStore = context.read<AuthStore>();
 
@@ -327,6 +286,29 @@ class _RegisterState extends State<Register> {
     );
   }
 
+  // Widget auxiliar para os critérios de senha (Checklist)
+  Widget _buildPasswordCriteria(String text, bool isMet) {
+    return Row(
+      children: [
+        Icon(
+          isMet ? Icons.check_circle : Icons.circle_outlined,
+          color: isMet ? Colors.green : Colors.grey,
+          size: 16,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: isMet ? Colors.green : Colors.grey,
+            decoration: isMet ? null : TextDecoration.none,
+          ),
+        ),
+      ],
+    );
+  }
+
+
   // Widget auxiliar para não repetir código dos TextFields
   Widget _buildTextField({
     required TextEditingController controller,
@@ -336,12 +318,17 @@ class _RegisterState extends State<Register> {
     bool isLoading = false,
     TextInputType inputType = TextInputType.text,
     List<dynamic>? inputFormatters,
+    Function(String)? onChange,
   }) {
     return TextField(
       controller: controller,
       obscureText: isObscure,
       keyboardType: inputType,
       enabled: !isLoading,
+      onChanged: onChange,
+
+      inputFormatters: inputFormatters?.cast<TextInputFormatter>(),
+
       decoration: InputDecoration(
         labelText: label,
         labelStyle: GoogleFonts.poppins(),
