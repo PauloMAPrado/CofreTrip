@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter/services.dart'; // Para Input Formatters
 // Importe o helper de feedback e o provider
 import 'package:travelbox/utils/feedbackHelper.dart'; 
-import '../controllers/ConviteProvider.dart';
+import '../stores/ConviteStore.dart';
 import '../services/authProvider.dart'; 
 import 'modules/header.dart';
 import 'modules/footbar.dart';
@@ -37,7 +37,7 @@ class _ConvidarState extends State<Convidar> {
     }
     
     // 1. Acessa Providers
-    final conviteProvider = Provider.of<Conviteprovider>(context, listen: false);
+    final conviteProvider = Provider.of<ConviteStore>(context, listen: false);
     final authStore = Provider.of<AuthStore>(context, listen: false);
     
     // 2. Verifica segurança
@@ -70,7 +70,7 @@ class _ConvidarState extends State<Convidar> {
   @override
   Widget build(BuildContext context) {
     // Escuta o Provider apenas para o estado de Loading
-    final conviteProvider = context.watch<Conviteprovider>();
+    final conviteProvider = context.watch<ConviteStore>();
     final isLoading = conviteProvider.isLoading;
 
     return Scaffold(

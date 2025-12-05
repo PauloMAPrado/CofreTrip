@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart'; 
 // Imports de Lógica
-import '../controllers/ConviteProvider.dart'; // Seu Provider de Convites
+import '../stores/ConviteStore.dart'; // Seu Provider de Convites
 import '../services/authProvider.dart'; // AuthStore (para userId)
 import '../models/convite.dart'; // O Model Convite
 import 'modules/header.dart';
@@ -33,14 +33,14 @@ class _ConvitesRecebidosState extends State<ConvitesRecebidos> {
     
     if (authStore.usuario?.id != null) {
       final userId = authStore.usuario!.id!;
-      Provider.of<Conviteprovider>(context, listen: false)
+      Provider.of<ConviteStore>(context, listen: false)
           .carregarConvites(userId);
     }
   }
 
   // Função que processa a resposta do usuário
   void _responderConvite(Convite convite, bool aceitar) async {
-    final conviteProvider = Provider.of<Conviteprovider>(context, listen: false);
+    final conviteProvider = Provider.of<ConviteStore>(context, listen: false);
     
     await conviteProvider.responderConvite(convite, aceitar);
     
@@ -98,7 +98,7 @@ class _ConvitesRecebidosState extends State<ConvitesRecebidos> {
 
   @override
   Widget build(BuildContext context) {
-    final conviteProvider = context.watch<Conviteprovider>();
+    final conviteProvider = context.watch<ConviteStore>();
     final List<Convite> convites = conviteProvider.convitesRecebidos;
     final bool isLoading = conviteProvider.isLoading;
     final String? errorMessage = conviteProvider.errorMessage;

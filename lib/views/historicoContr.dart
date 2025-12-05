@@ -7,7 +7,7 @@ import 'package:travelbox/views/modules/header.dart';
 import 'package:travelbox/views/modules/footbar.dart';
 
 // Imports de Lógica
-import '../controllers/detalhesCofreStore.dart';
+import '../stores/detalhesCofreStore.dart';
 import '../models/contribuicao.dart';
 import '../models/usuario.dart';
 

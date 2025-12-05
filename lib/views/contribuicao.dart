@@ -8,7 +8,7 @@ import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
 
-import '../controllers/detalhesCofreStore.dart'; 
+import '../stores/detalhesCofreStore.dart'; 
 import '../services/authProvider.dart'; 
 
 

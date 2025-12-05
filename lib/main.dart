@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:travelbox/controllers/ConviteProvider.dart';
-import 'package:travelbox/controllers/PerfilProvider.dart';
-import 'package:travelbox/controllers/cofreStore.dart';
-import 'package:travelbox/controllers/detalhesCofreStore.dart';
+import 'package:travelbox/stores/ConviteStore.dart';
+import 'package:travelbox/stores/PerfilProvider.dart';
+import 'package:travelbox/stores/cofreStore.dart';
+import 'package:travelbox/stores/detalhesCofreStore.dart';
 import 'package:travelbox/views/home.dart';
 import 'package:travelbox/views/login.dart';
 import 'package:travelbox/views/pageSplash.dart';
@@ -52,8 +52,8 @@ class MyApp extends StatelessWidget {
           ),
         ),
 
-        ChangeNotifierProvider<Conviteprovider>(
-          create: (context) => Conviteprovider(
+        ChangeNotifierProvider<ConviteStore>(
+          create: (context) => ConviteStore(
             context.read<FirestoreService>(),
           ),
         ),

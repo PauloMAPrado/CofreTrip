@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../controllers/PerfilProvider.dart'; // Seu PerfilProvider
+import '../stores/PerfilProvider.dart'; // Seu PerfilProvider
 import 'package:travelbox/utils/feedbackHelper.dart';
 import 'package:travelbox/views/modules/header.dart';
 

@@ -11,7 +11,7 @@ import 'package:travelbox/views/listaUser.dart';
 import 'package:travelbox/models/cofre.dart' as cofre_model;
 
 // Importe o seu modelo de dados e o provider de detalhes
-import '../controllers/detalhesCofreStore.dart';
+import '../stores/detalhesCofreStore.dart';
 
 class Cofre extends StatefulWidget { // Mantenha como StatefulWidget para initState
   final String cofreId; 

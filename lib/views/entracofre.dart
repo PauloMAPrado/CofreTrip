@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
-import '../controllers/cofreStore.dart'; // Seu CofreProvider
+import '../stores/cofreStore.dart'; // Seu CofreProvider
 import '../services/authProvider.dart'; // Seu AuthStore
 import 'home.dart';
 class Entracofre extends StatefulWidget {
