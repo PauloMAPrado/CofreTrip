@@ -7,9 +7,9 @@ import 'package:travelbox/views/modules/header.dart';
 import 'package:travelbox/views/modules/footbar.dart';
 
 // Imports de Lógica
-import '../controllers/detalhesCofreProvider.dart';
+import '../controllers/detalhesCofreStore.dart';
 import '../models/contribuicao.dart';
-import '../models/Usuario.dart';
+import '../models/usuario.dart';
 
 class Historicocontr extends StatefulWidget {
   // 🎯 O ID do Cofre é obrigatório para buscar o histórico correto
@@ -36,7 +36,7 @@ class _HistoricocontrState extends State<Historicocontr> {
     super.initState();
     // ⚠️ Dispara o carregamento dos detalhes do cofre específico
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<DetalhesCofreProvider>(context, listen: false)
+      Provider.of<DetalhesCofreStore>(context, listen: false)
           .carregarDadosCofre(widget.cofreId);
     });
   }
@@ -73,7 +73,7 @@ class _HistoricocontrState extends State<Historicocontr> {
   @override
   Widget build(BuildContext context) {
     // 1. Lê o estado do Provider
-    final detalhesProvider = context.watch<DetalhesCofreProvider>();
+    final detalhesProvider = context.watch<DetalhesCofreStore>();
     final cofre = detalhesProvider.cofreAtivo;
     final contribuicoes = detalhesProvider.contribuicoes;
     final contribuidoresMap = detalhesProvider.contribuidoresMap; // Mapa de ID -> Usuário

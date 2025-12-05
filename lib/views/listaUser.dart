@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:travelbox/views/modules/header.dart';
 import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/cofre.dart';
-import '../controllers/detalhesCofreProvider.dart'; 
-import '../models/Usuario.dart'; 
+import '../controllers/detalhesCofreStore.dart'; 
+import '../models/usuario.dart'; 
 import '../models/permissao.dart'; 
 import 'package:travelbox/views/convidar.dart';
 
@@ -25,7 +25,7 @@ class _ListaUserState extends State<ListaUser> {
     super.initState();
     // Dispara a busca dos membros ao iniciar a tela
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<DetalhesCofreProvider>(context, listen: false)
+      Provider.of<DetalhesCofreStore>(context, listen: false)
           .carregarDadosCofre(widget.cofreId);
     });
   }
@@ -67,7 +67,7 @@ class _ListaUserState extends State<ListaUser> {
   @override
   Widget build(BuildContext context) {
     // 3. Lê o estado do Provider
-    final detalhesProvider = context.watch<DetalhesCofreProvider>();
+    final detalhesProvider = context.watch<DetalhesCofreStore>();
     final bool isLoading = detalhesProvider.isLoading;
     final List<Permissao> membros = detalhesProvider.membros;
     final Map<String, Usuario> contribuidores = detalhesProvider.contribuidoresMap;

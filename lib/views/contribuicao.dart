@@ -8,7 +8,7 @@ import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
 
-import '../controllers/detalhesCofreProvider.dart'; 
+import '../controllers/detalhesCofreStore.dart'; 
 import '../services/authProvider.dart'; 
 
 
@@ -93,7 +93,7 @@ class _ContribuicaoState extends State<Contribuicao> {
     }
 
     // 4. Acessa Providers e Chama a Ação
-    final detalhesProvider = Provider.of<DetalhesCofreProvider>(context, listen: false);
+    final detalhesProvider = Provider.of<DetalhesCofreStore>(context, listen: false);
     final authStore = Provider.of<AuthStore>(context, listen: false);
 
     if (authStore.usuario?.id == null) {

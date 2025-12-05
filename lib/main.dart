@@ -3,14 +3,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:travelbox/controllers/ConviteProvider.dart';
 import 'package:travelbox/controllers/PerfilProvider.dart';
 import 'package:travelbox/controllers/cofreStore.dart';
-import 'package:travelbox/controllers/detalhesCofreProvider.dart';
+import 'package:travelbox/controllers/detalhesCofreStore.dart';
 import 'package:travelbox/views/home.dart';
 import 'package:travelbox/views/login.dart';
 import 'package:travelbox/views/pageSplash.dart';
 import 'firebase_options.dart';
 import 'package:provider/provider.dart';
 import 'package:travelbox/services/AuthService.dart';
-import 'package:travelbox/services/FirestoreService.dart';
+import 'package:travelbox/services/firestoreService.dart';
 import 'package:travelbox/services/authProvider.dart';
 
 void main() async {
@@ -46,8 +46,8 @@ class MyApp extends StatelessWidget {
           ),
         ),
 
-        ChangeNotifierProvider<DetalhesCofreProvider>(
-          create: (context) => DetalhesCofreProvider(
+        ChangeNotifierProvider<DetalhesCofreStore>(
+          create: (context) => DetalhesCofreStore(
             context.read<FirestoreService>(),
           ),
         ),

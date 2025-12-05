@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:travelbox/models/convite.dart';
 import 'package:travelbox/models/permissao.dart';
 import 'package:travelbox/models/statusConvite.dart';
-import 'package:travelbox/models/Usuario.dart';
+import 'package:travelbox/models/usuario.dart';
 import 'package:travelbox/models/nivelPermissao.dart';
-import 'package:travelbox/services/FirestoreService.dart';
+import 'package:travelbox/services/firestoreService.dart';
 
 class Conviteprovider extends ChangeNotifier {
   final FirestoreService _firestoreService;
