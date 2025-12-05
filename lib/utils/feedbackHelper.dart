@@ -6,6 +6,12 @@ class FeedbackHelper {
   static void mostrarErro(BuildContext context, String? erroCru) {
     // 1. REMOVI O 'if (erroCru == null) { ... }' que estava bloqueando tudo.
     
+  //espião 
+
+  print("🚨 ERRO CRU RECEBIDO: $erroCru");
+
+
+
     // O AppErrors.traduzir já cuida se for nulo, retornando uma mensagem genérica.
     final mensagemTraduzida = AppErrors.traduzir(erroCru);
 

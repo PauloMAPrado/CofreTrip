@@ -7,6 +7,8 @@ class AppErrors {
     String mensagem = erro.toString().toLowerCase();
 
     // --- ERROS DE AUTENTICAÇÃO (Auth) ---
+
+    
     if (mensagem.contains('user-not-found') || mensagem.contains('user not found')) {
       return 'Usuário não encontrado. Verifique o e-mail.';
     } 
@@ -20,10 +22,19 @@ class AppErrors {
       return 'Este e-mail já está sendo usado.';
     } 
     else if (mensagem.contains('weak-password')) {
-      return 'A senha é muito fraca. Escolha uma senha com pelo menos 8 caracteres.';
-    } 
+      return 'A senha é muito fraca. Escolha uma senha com pelo menos 6 caracteres.';
+    }
+    else if (mensagem.contains('requisitos mínimos')) {
+      return 'A senha não atende aos requisitos mínimos.';
+    }
     else if (mensagem.contains('invalid-email') || mensagem.contains('badly formatted')) {
       return 'O formato do e-mail é inválido.';
+    }
+    else if (mensagem.contains('as senhas não coincidem')) {
+      return 'As senhas não coincidem.';
+    }
+    else if (mensagem.contains('preencha todos os campos')) {
+      return 'Preencha todos os campos obrigatórios.';
     }
     else if (mensagem.contains('account-exists-with-different-credential')) {
       return 'Já existe uma conta com este e-mail associada a outro método de login.';
@@ -50,6 +61,12 @@ class AppErrors {
 
     else if (mensagem.contains('usuário não logado')) {
       return 'Sessão expirada. Faça login novamente.';
+    }
+
+
+    // Remove a palavra "Exception:" se ela aparecer
+    else if (mensagem.contains('exception:')) {
+       return mensagem.replaceAll('exception:', '').trim();
     }
 
     return 'Ocorreu um erro inesperado. Tente novamente.'; 
