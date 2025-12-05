@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:travelbox/controllers/ConviteProvider.dart';
 import 'package:travelbox/controllers/PerfilProvider.dart';
-import 'package:travelbox/controllers/cofreProvider.dart';
+import 'package:travelbox/controllers/cofreStore.dart';
 import 'package:travelbox/controllers/detalhesCofreProvider.dart';
 import 'package:travelbox/views/home.dart';
 import 'package:travelbox/views/login.dart';
@@ -40,8 +40,8 @@ class MyApp extends StatelessWidget {
           ),
         ),
         
-        ChangeNotifierProvider<CofreProvider>(
-          create: (context) => CofreProvider(
+        ChangeNotifierProvider<CofreStore>(
+          create: (context) => CofreStore(
             context.read<FirestoreService>(),
           ),
         ),

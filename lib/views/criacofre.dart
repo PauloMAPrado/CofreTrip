@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart'; 
 import 'package:provider/provider.dart';
 import 'home.dart'; 
-import 'package:travelbox/controllers/cofreProvider.dart';
+import 'package:travelbox/controllers/cofreStore.dart';
 import 'package:travelbox/services/authProvider.dart';
 
 class Criacofre extends StatefulWidget {
@@ -85,7 +85,7 @@ class _CriacofreState extends State<Criacofre> {
     }
 
     // --- ACESSA PROVIDERS E VERIFICAÇÃO DE SEGURANÇA ---
-    final cofreProvider = Provider.of<CofreProvider>(context, listen: false);
+    final cofreProvider = Provider.of<CofreStore>(context, listen: false);
     final authStore = Provider.of<AuthStore>(context, listen: false);
 
     // 4. VERIFICAÇÃO DE USUÁRIO (Corrigido para usar a checagem completa de ID)
@@ -129,7 +129,7 @@ class _CriacofreState extends State<Criacofre> {
   Widget build(BuildContext context) {
     
     // Observa o estado de carregamento do CofreProvider
-    final bool isLoading = context.watch<CofreProvider>().isLoading; 
+    final bool isLoading = context.watch<CofreStore>().isLoading; 
 
     return Scaffold(
       backgroundColor: const Color(0xFF1E90FF), 

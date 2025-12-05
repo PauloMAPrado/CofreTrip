@@ -5,7 +5,7 @@ import 'package:travelbox/models/nivelPermissao.dart';
 import 'package:travelbox/services/FirestoreService.dart';
 
 
-class CofreProvider extends ChangeNotifier {
+class CofreStore extends ChangeNotifier {
   // 2. DEPENDÊNCIA DO SERVICE (A "COZINHA")
   // Ele "conhece" o service, mas a UI não.
   final FirestoreService _firestoreService;
@@ -18,7 +18,7 @@ class CofreProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  CofreProvider(this._firestoreService);
+  CofreStore(this._firestoreService);
 
   Future<void> carregarCofres(String userId) async {
     _isLoading = true;
@@ -66,6 +66,9 @@ class CofreProvider extends ChangeNotifier {
              throw Exception("O Valor Alvo deve ser um número maior que R\$ 0,00.");
         }
         
+        // 2. Conversão da Data
+        // ATENÇÃO: O DateTime.parse espera formato "YYYY-MM-DD".
+        // Se sua UI manda "DD/MM/YYYY", precisaremos ajustar aqui depois.
         final DateTime parsedDataInicio = DateTime.parse(dataInicioRaw); 
         final int valorAlvoInt = parsedValorAlvo.round();
         
@@ -97,14 +100,14 @@ class CofreProvider extends ChangeNotifier {
     }
   }
 
+// --- ENTRAR COM CÓDIGO ---
   Future<String?> entrarComCodigo(String codigo, String userId) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      // 1. Acha o cofre pelo código
-      // Normaliza o código para maiúsculas para facilitar a digitação
+      // 1. Acha o cofre pelo código (Normalizado uppercase)
       final cofre = await _firestoreService.findCofreByCode(
         codigo.toUpperCase().trim(),
       );
@@ -115,33 +118,32 @@ class CofreProvider extends ChangeNotifier {
         return "Código inválido. Verifique e tente novamente.";
       }
 
-      bool jaPaticipa = _cofres.any((c) => c.id == cofre.id);
-      if (jaPaticipa) {
+      // 2. Verifica duplicidade
+      bool jaParticipa = _cofres.any((c) => c.id == cofre.id);
+      if (jaParticipa) {
         _isLoading = false;
         notifyListeners();
         return "Você já participa deste cofre!";
       }
 
-      // 2. Cria uma permissão de "leitor" (ou 'membro', 'editor', etc)
+      // 3. Cria a permissão de CONTRIBUINTE
       Permissao novaPermissao = Permissao(
-        id: null,
         idUsuario: userId,
         idCofre: cofre.id!,
-        nivelPermissao:
-            NivelPermissao.contribuinte, // Nível padrão para quem entra
+        nivelPermissao: NivelPermissao.contribuinte, 
       );
 
-      // 3. Salva a permissão
       await _firestoreService.criarPermissao(novaPermissao);
 
-      // 4. (Opcional) Adiciona o cofre à lista local
+      // 4. Adiciona à lista local se não existir
       if (!_cofres.any((c) => c.id == cofre.id)) {
         _cofres.add(cofre);
       }
 
       _isLoading = false;
       notifyListeners();
-      return null; // Sucesso!
+      return null; // Sucesso (null = sem erro)
+      
     } catch (e) {
       _isLoading = false;
       notifyListeners();

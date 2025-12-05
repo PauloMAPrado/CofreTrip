@@ -7,7 +7,7 @@ import 'package:travelbox/views/modules/header.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 // Imports de lógica
-import '../controllers/cofreProvider.dart'; 
+import '../controllers/cofreStore.dart'; 
 import '../services/authProvider.dart'; 
 import '../controllers/ConviteProvider.dart'; // NOVO: Para buscar convites
 import '../models/cofre.dart' as CofreModel; 
@@ -37,7 +37,7 @@ class _HomeState extends State<Home> {
     
     if (_isInitialLoad) {
       final authStore = Provider.of<AuthStore>(context, listen: false);
-      final cofreProvider = Provider.of<CofreProvider>(context, listen: false);
+      final cofreProvider = Provider.of<CofreStore>(context, listen: false);
       final conviteProvider = Provider.of<Conviteprovider>(context, listen: false); 
       
       if (authStore.usuario?.id?.isNotEmpty ?? false) {
@@ -247,7 +247,7 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     // 1. Obtém o estado
-    final cofreProvider = context.watch<CofreProvider>();
+    final cofreProvider = context.watch<CofreStore>();
     final authStore = context.watch<AuthStore>();
     final conviteProvider = context.watch<Conviteprovider>(); // Lendo o Provider de Convites
 
