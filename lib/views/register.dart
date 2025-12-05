@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:travelbox/services/authProvider.dart';
+import 'package:travelbox/stores/authStore.dart';
 import 'package:travelbox/utils/feedbackHelper.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:travelbox/views/modules/header.dart';

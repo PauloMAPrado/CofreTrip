@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
 import '../stores/cofreStore.dart'; // Seu CofreProvider
-import '../services/authProvider.dart'; // Seu AuthStore
+import '../stores/authStore.dart'; // Seu AuthStore
 import 'home.dart';
 class Entracofre extends StatefulWidget {
   const Entracofre({super.key});

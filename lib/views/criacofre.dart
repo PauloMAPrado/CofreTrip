@@ -7,7 +7,7 @@ import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:provider/provider.dart';
 import 'home.dart'; 
 import 'package:travelbox/stores/cofreStore.dart';
-import 'package:travelbox/services/authProvider.dart';
+import 'package:travelbox/stores/authStore.dart';
 
 class Criacofre extends StatefulWidget {
   const Criacofre({super.key});

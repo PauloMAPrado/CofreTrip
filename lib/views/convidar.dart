@@ -5,7 +5,7 @@ import 'package:flutter/services.dart'; // Para Input Formatters
 // Importe o helper de feedback e o provider
 import 'package:travelbox/utils/feedbackHelper.dart'; 
 import '../stores/ConviteStore.dart';
-import '../services/authProvider.dart'; 
+import '../stores/authStore.dart'; 
 import 'modules/header.dart';
 import 'modules/footbar.dart';
 

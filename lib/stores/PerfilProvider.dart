@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:travelbox/models/usuario.dart';
-import 'package:travelbox/services/AuthService.dart';
+import 'package:travelbox/services/authService.dart';
 import 'package:travelbox/services/firestoreService.dart';
 
 class PerfilProvider extends ChangeNotifier {

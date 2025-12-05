@@ -9,9 +9,9 @@ import 'package:travelbox/views/login.dart';
 import 'package:travelbox/views/pageSplash.dart';
 import 'firebase_options.dart';
 import 'package:provider/provider.dart';
-import 'package:travelbox/services/AuthService.dart';
+import 'package:travelbox/services/authService.dart';
 import 'package:travelbox/services/firestoreService.dart';
-import 'package:travelbox/services/authProvider.dart';
+import 'package:travelbox/stores/authStore.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

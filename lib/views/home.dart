@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 // Imports de lógica
 import '../stores/cofreStore.dart'; 
-import '../services/authProvider.dart'; 
+import '../stores/authStore.dart'; 
 import '../stores/ConviteStore.dart'; // NOVO: Para buscar convites
 import '../models/cofre.dart' as CofreModel; 
 import 'cofre.dart'; 

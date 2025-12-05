@@ -9,7 +9,7 @@ import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
 
 import '../stores/detalhesCofreStore.dart'; 
-import '../services/authProvider.dart'; 
+import '../stores/authStore.dart'; 
 
 
 class Contribuicao extends StatefulWidget {

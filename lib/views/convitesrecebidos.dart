@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart'; 
 // Imports de Lógica
 import '../stores/ConviteStore.dart'; // Seu Provider de Convites
-import '../services/authProvider.dart'; // AuthStore (para userId)
+import '../stores/authStore.dart'; // AuthStore (para userId)
 import '../models/convite.dart'; // O Model Convite
 import 'modules/header.dart';
 import 'modules/footbar.dart';
