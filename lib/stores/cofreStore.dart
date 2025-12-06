@@ -55,7 +55,7 @@ class CofreStore extends ChangeNotifier {
         }
   
         final cleanValorAlvo = valorPlanoRaw
-            .replaceAll('R\$', '')
+            .replaceAll(RegExp(r'[R\$ ]'), '')
             .replaceAll('.', '') // Remove ponto de milhar
             .replaceAll(',', '.') // Converte vírgula para ponto decimal
             .trim(); 

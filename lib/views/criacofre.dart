@@ -36,7 +36,7 @@ class _CriacofreState extends State<Criacofre> {
   final DateFormat _dateFormat = DateFormat('yyyy-MM-dd');
 
   final _currencyMask = MaskTextInputFormatter(
-    mask: '#.###.###,00', 
+    mask: '##.###.###,00', 
     filter: {"#": RegExp(r'[0-9]')},
     type: MaskAutoCompletionType.lazy,
   );
@@ -149,7 +149,6 @@ class _CriacofreState extends State<Criacofre> {
                         decoration: InputDecoration(
                           labelText: 'Valor Alvo',
                           prefixIcon: const Icon(Icons.attach_money, color: Color(0xFF1E90FF)),
-                          prefixText: 'R\$ ',
                           labelStyle: GoogleFonts.poppins(),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
                           filled: true,

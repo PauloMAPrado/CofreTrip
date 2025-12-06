@@ -32,8 +32,9 @@ class _CofreScreenState extends State<CofreScreen> {
   // --- Formatação de Moeda e Data ---
   final NumberFormat _currencyFormat = NumberFormat.currency(
     locale: 'pt_BR', 
-    symbol: 'R\$',
-    decimalDigits: 2,
+    symbol: 'R\$ ', 
+    decimalDigits: 2
+  
   );
 
   final DateFormat _dateFormat = DateFormat('dd/MM/yyyy');
