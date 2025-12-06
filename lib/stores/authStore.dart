@@ -43,12 +43,22 @@ class AuthStore extends ChangeNotifier {
       _firebaseUser = null;
       _usuario = null;
     } else {
-      _sessionStatus = SessionStatus.authenticated;
+
       _firebaseUser = firebaseUser;
 
-      _usuario = await _firestoreService.getUsuario(firebaseUser.uid);
-    }
+       try{
+        _usuario = await _firestoreService.getUsuario(firebaseUser.uid);
 
+        if(_usuario != null) {
+          _sessionStatus = SessionStatus.authenticated;
+        } else {
+          _sessionStatus = SessionStatus.unauthenticated;
+        }
+       } catch (e) {
+        print("Erro Crítico ao buscar o usuário: $e");
+        _sessionStatus = SessionStatus.unauthenticated;
+       }
+    }
     notifyListeners();
   }
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:travelbox/stores/ConviteStore.dart';
+import 'package:travelbox/stores/conviteStore.dart';
 import 'package:travelbox/stores/PerfilProvider.dart';
 import 'package:travelbox/stores/cofreStore.dart';
 import 'package:travelbox/stores/detalhesCofreStore.dart';

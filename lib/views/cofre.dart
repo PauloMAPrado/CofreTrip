@@ -264,8 +264,6 @@ class _CofreScreenState extends State<CofreScreen> {
 
 // Comando para teste 
 
-import 'package:flutter/material.dart';
-
 // Esta é uma tela temporária só para testar a navegação da Home
 class CofreScreen extends StatelessWidget {
   final String cofreId;
