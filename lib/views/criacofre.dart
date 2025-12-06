@@ -1,13 +1,23 @@
+// Imports essenciais
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:travelbox/views/modules/footbar.dart';
-import 'package:travelbox/views/modules/header.dart';
 import 'package:intl/intl.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart'; 
 import 'package:provider/provider.dart';
-import 'home.dart'; 
+
+
+//Imports das Views
+import 'package:travelbox/views/modules/footbar.dart';
+import 'package:travelbox/views/modules/header.dart';
+
+// Imports dos Stores
 import 'package:travelbox/stores/cofreStore.dart';
 import 'package:travelbox/stores/authStore.dart';
+
+// Import do utils
+import 'package:travelbox/utils/feedbackHelper.dart';
+
+
 
 class Criacofre extends StatefulWidget {
   const Criacofre({super.key});
@@ -18,29 +28,18 @@ class Criacofre extends StatefulWidget {
 
 class _CriacofreState extends State<Criacofre> {
   // --- Controladores (Estado local da UI) ---
-  final TextEditingController _nomeController = TextEditingController();
-  final TextEditingController _dataInicioController = TextEditingController();
-  final TextEditingController _valorAlvoController = TextEditingController();
+  final _nomeController = TextEditingController();
+  final _dataInicioController = TextEditingController();
+  final _valorAlvoController = TextEditingController();
   
   // --- Formatadores ---
-  final DateFormat _dateFormat = DateFormat('dd/MM/yyyy');
+  final DateFormat _dateFormat = DateFormat('yyyy-MM-dd');
+
   final _currencyMask = MaskTextInputFormatter(
     mask: '#.###.###,00', 
     filter: {"#": RegExp(r'[0-9]')},
     type: MaskAutoCompletionType.lazy,
   );
-  
-
-  void _showSnackBar(String message, {bool isError = false}) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
-        duration: const Duration(seconds: 4),
-      ),
-    );
-  }
 
   // --- Seletor de Data ---
   Future<void> _selectDate(BuildContext context) async {
@@ -52,70 +51,11 @@ class _CriacofreState extends State<Criacofre> {
       helpText: 'Selecione a Data de Início',
     );
     if (picked != null) {
-      _dataInicioController.text = DateFormat('yyyy-MM-dd').format(picked);
+      _dataInicioController.text = _dateFormat.format(picked);
     }
   }
 
-  // --- Lógica Principal: Dispara o evento (SÍNCRONA) ---
-  void _handleCreateCofre() async {
-    
-    // 1. Pega os dados BRUTOS da UI
-    final nome = _nomeController.text.trim();
-    final dataInicioRaw = _dataInicioController.text.trim(); 
-    final valorAlvoRaw = _valorAlvoController.text.trim(); 
-
-    // 2. Validação básica de preenchimento (apenas Strings vazias)
-    if (nome.isEmpty || dataInicioRaw.isEmpty || valorAlvoRaw.isEmpty) {
-      _showSnackBar('Preencha todos os campos.', isError: true);
-      return;
-    }
-
-    // 3. Validação e Limpeza do Valor Alvo
-    final cleanValorAlvo = valorAlvoRaw
-        .replaceAll('R\$', '')
-        .replaceAll('.', '') // Remove ponto de milhar
-        .replaceAll(',', '.') // Converte vírgula para ponto decimal
-        .trim(); 
-
-    final double? parsedValorAlvo = double.tryParse(cleanValorAlvo);
-
-    if (parsedValorAlvo == null || parsedValorAlvo <= 0) {
-      _showSnackBar('O Valor Alvo deve ser um número maior que R\$ 0,00.', isError: true);
-      return;
-    }
-
-    // --- ACESSA PROVIDERS E VERIFICAÇÃO DE SEGURANÇA ---
-    final cofreProvider = Provider.of<CofreStore>(context, listen: false);
-    final authStore = Provider.of<AuthStore>(context, listen: false);
-
-    // 4. VERIFICAÇÃO DE USUÁRIO (Corrigido para usar a checagem completa de ID)
-    if (authStore.usuario?.id?.isNotEmpty != true) {
-        _showSnackBar('O perfil não foi carregado. Tente novamente.', isError: true);
-        return;
-    }
-    
-    final String userId = authStore.usuario!.id!; // Agora é seguro usar '!'
-    
-    // 5. DISPARA A CRIAÇÃO NO PROVIDER
-    bool sucesso = await cofreProvider.criarCofre(
-    nome: nome, 
-    valorPlanoRaw: valorAlvoRaw, // Corrigido para a chamada do provider
-    dataInicioRaw: dataInicioRaw, // Passa a String bruta
-    userId: userId,
-    );
-    
-    // 6. AVALIA O RESULTADO E NAVEGA
-    if (sucesso && mounted) {
-        _showSnackBar('Cofre criado com sucesso!', isError: false);
-        // NAVEGAÇÃO FINAL PARA A HOME/LISTA DE VIAGENS
-        Navigator.of(context).pop(
-            MaterialPageRoute(builder: (context) => const Home()), 
-        );
-    } else {
-        _showSnackBar(cofreProvider.errorMessage ?? 'Falha desconhecida ao criar cofre.', isError: true);
-    }
-  }
-
+/*         se tiver dando Erro tira esse codigo do comentario
   @override
   void dispose() {
     _nomeController.dispose();
@@ -123,23 +63,23 @@ class _CriacofreState extends State<Criacofre> {
     _valorAlvoController.dispose();
     super.dispose();
   }
+*/
 
-
-  @override
+@override
   Widget build(BuildContext context) {
-    
-    // Observa o estado de carregamento do CofreProvider
-    final bool isLoading = context.watch<CofreStore>().isLoading; 
+    // 1. OUVINDO O STORE (Para Loading)
+    final cofreStore = context.watch<CofreStore>();
+    final isLoading = cofreStore.isLoading;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1E90FF), 
+      backgroundColor: const Color(0xFF1E90FF),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Header(), // A chamada do widget
+          const Header(),
           Expanded(
             child: Container(
-              decoration: const BoxDecoration( 
+              decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(50),
@@ -148,7 +88,7 @@ class _CriacofreState extends State<Criacofre> {
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: SingleChildScrollView( // Para evitar overflow do teclado
+                child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -163,11 +103,11 @@ class _CriacofreState extends State<Criacofre> {
                         ),
                       ),
                       const SizedBox(height: 30.0),
-                      
-                      // NOME DO COFRE
+
+                      // NOME
                       TextField(
-                        controller: _nomeController, 
-                        keyboardType: TextInputType.name,
+                        controller: _nomeController,
+                        enabled: !isLoading,
                         decoration: InputDecoration(
                           labelText: 'Nome do Cofre (Ex: Tailândia 2026)',
                           prefixIcon: const Icon(Icons.flight_takeoff, color: Color(0xFF1E90FF)),
@@ -176,23 +116,18 @@ class _CriacofreState extends State<Criacofre> {
                           filled: true,
                           fillColor: Colors.grey[50],
                         ),
-                        style: GoogleFonts.poppins(
-                          color: const Color.fromARGB(255, 0, 0, 0),
-                        ),
+                        style: GoogleFonts.poppins(),
                       ),
                       const SizedBox(height: 20.0),
 
-                      // DATA DE INÍCIO (Seletor)
+                      // DATA
                       GestureDetector(
-                        onTap: isLoading ? null : () => _selectDate(context), // Desabilita no loading
-                        child: AbsorbPointer( // Impede a edição direta do campo
+                        onTap: isLoading ? null : () => _selectDate(context),
+                        child: AbsorbPointer(
                           child: TextField(
-                            controller: _dataInicioController, 
-                            keyboardType: TextInputType.datetime,
+                            controller: _dataInicioController,
                             decoration: InputDecoration(
-                              labelText: _dataInicioController.text.isEmpty
-                                  ? 'Data de Início da Viagem'
-                                  : _dateFormat.format(DateTime.parse(_dataInicioController.text)), 
+                              labelText: 'Data de Início da Viagem',
                               prefixIcon: const Icon(Icons.calendar_today, color: Color(0xFF1E90FF)),
                               suffixIcon: const Icon(Icons.arrow_drop_down),
                               labelStyle: GoogleFonts.poppins(),
@@ -205,60 +140,82 @@ class _CriacofreState extends State<Criacofre> {
                       ),
                       const SizedBox(height: 20.0),
 
-                      // VALOR ALVO
+                      // VALOR
                       TextField(
-                        controller: _valorAlvoController, 
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true), 
+                        controller: _valorAlvoController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        enabled: !isLoading,
+                        inputFormatters: [_currencyMask],
                         decoration: InputDecoration(
                           labelText: 'Valor Alvo',
                           prefixIcon: const Icon(Icons.attach_money, color: Color(0xFF1E90FF)),
-                          prefixText: 'R\$ ', 
+                          prefixText: 'R\$ ',
                           labelStyle: GoogleFonts.poppins(),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                          ),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
                           filled: true,
                           fillColor: Colors.white,
                         ),
                         style: GoogleFonts.poppins(),
-                      
-                        // Aplicação da Máscara de Moeda
-                        inputFormatters: [_currencyMask],    
                       ),
                       const SizedBox(height: 25.0),
 
                       // BOTÃO CONFIRMAR
                       ElevatedButton(
-                        onPressed: isLoading ? null : _handleCreateCofre, // Dispara a função síncrona
+                        onPressed: isLoading ? null : () async {
+                          // Ação do Botão
+                          FocusScope.of(context).unfocus();
+
+                          // 1. Validação simples de vazio
+                          if (_nomeController.text.isEmpty || 
+                              _dataInicioController.text.isEmpty || 
+                              _valorAlvoController.text.isEmpty) {
+                            FeedbackHelper.mostrarErro(context, "Preencha todos os campos.");
+                            return;
+                          }
+
+                          // 2. Pegar usuário e Store
+                          final authStore = context.read<AuthStore>();
+                          final cofreStore = context.read<CofreStore>();
+                          
+                          if (authStore.usuario?.id == null) {
+                             FeedbackHelper.mostrarErro(context, "Erro de sessão. Faça login novamente.");
+                             return;
+                          }
+
+                          // 3. Chamar o Store (Passando strings brutas, ele que se vire!)
+                          bool sucesso = await cofreStore.criarCofre(
+                            nome: _nomeController.text,
+                            valorPlanoRaw: _valorAlvoController.text, // "10.000,00"
+                            dataInicioRaw: _dataInicioController.text, // "2025-01-01"
+                            userId: authStore.usuario!.id!,
+                          );
+
+                          if (!mounted) return;
+
+                          if (sucesso) {
+                            FeedbackHelper.mostrarSucesso(context, "Cofre criado com sucesso!");
+                            Navigator.pop(context); // Volta para a Home
+                          } else {
+                            FeedbackHelper.mostrarErro(context, cofreStore.errorMessage);
+                          }
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1E90FF),
                           padding: const EdgeInsets.symmetric(vertical: 16.0),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
                         ),
-                        child: isLoading 
-                            ? const SizedBox( 
-                                width: 24, height: 24, 
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
-                              )
-                            : Text(
-                                'Confirmar',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16.0,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
+                        child: isLoading
+                            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white))
+                            : Text('Confirmar', style: GoogleFonts.poppins(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.white)),
                       ),
-                      const SizedBox(height: 25.0), 
+                      const SizedBox(height: 25.0),
                     ],
-                  ), 
+                  ),
                 ),
-              ), 
-            ), 
-          ), 
-          Footbarr(), 
+              ),
+            ),
+          ),
+          const Footbarr(),
         ],
       ),
     );

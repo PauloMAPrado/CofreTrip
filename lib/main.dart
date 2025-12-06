@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:travelbox/stores/ConviteStore.dart';
+import 'package:travelbox/stores/conviteStore.dart';
 import 'package:travelbox/stores/PerfilProvider.dart';
 import 'package:travelbox/stores/cofreStore.dart';
 import 'package:travelbox/stores/detalhesCofreStore.dart';
@@ -10,8 +10,8 @@ import 'package:travelbox/views/pageSplash.dart';
 import 'firebase_options.dart';
 import 'package:provider/provider.dart';
 import 'package:travelbox/services/authService.dart';
-import 'package:travelbox/services/firestoreService.dart';
 import 'package:travelbox/stores/authStore.dart';
+import 'package:travelbox/services/firestoreService.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

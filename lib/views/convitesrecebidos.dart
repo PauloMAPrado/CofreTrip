@@ -1,13 +1,22 @@
+// Imports essenciais
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart'; 
-// Imports de Lógica
-import '../stores/ConviteStore.dart'; // Seu Provider de Convites
-import '../stores/authStore.dart'; // AuthStore (para userId)
-import '../models/convite.dart'; // O Model Convite
-import 'modules/header.dart';
-import 'modules/footbar.dart';
+import 'package:intl/intl.dart';
+
+//Imports das Views
+import 'package:travelbox/views/modules/footbar.dart';
+import 'package:travelbox/views/modules/header.dart';
+
+// Import do models
+import 'package:travelbox/models/convite.dart';
+
+// Imports dos Stores
+import 'package:travelbox/stores/conviteStore.dart';
+import 'package:travelbox/stores/authStore.dart';
+
+// Import do utils
+import 'package:travelbox/utils/feedbackHelper.dart';
 
 class ConvitesRecebidos extends StatefulWidget {
   const ConvitesRecebidos({super.key});
@@ -23,33 +32,34 @@ class _ConvitesRecebidosState extends State<ConvitesRecebidos> {
     super.initState();
     // Dispara o carregamento dos convites pendentes assim que a tela abre
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _carregarConvitesPendentes();
+      _carregarConvites();
     });
   }
   
   // Função que inicia a busca de convites
-  void _carregarConvitesPendentes() {
-    final authStore = Provider.of<AuthStore>(context, listen: false);
-    
-    if (authStore.usuario?.id != null) {
-      final userId = authStore.usuario!.id!;
-      Provider.of<ConviteStore>(context, listen: false)
-          .carregarConvites(userId);
+  void _carregarConvites() {
+    final user = context.read<AuthStore>().usuario;    
+    if (user?.id != null) {
+      context.read<ConviteStore>().carregarConvites(user!.id!);
     }
   }
 
   // Função que processa a resposta do usuário
   void _responderConvite(Convite convite, bool aceitar) async {
-    final conviteProvider = Provider.of<ConviteStore>(context, listen: false);
+    final store = context.read<ConviteStore>();
     
-    await conviteProvider.responderConvite(convite, aceitar);
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(aceitar ? 'Convite aceito! Cofre adicionado.' : 'Convite recusado.')),
-    );
+    await store.responderConvite(convite, aceitar);
+        
+    if(mounted) {
+      if(aceitar) {
+        FeedbackHelper.mostrarSucesso(context,'Convite aceito! O cofre foi adicionado à sua lista.');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Convite recusado.")));
+      }
+    }
   }
 
-
+/* ============================ codigo antigo ===================================
   // --- Widget para exibir cada item de convite ---
   Widget _buildConviteCard(Convite convite, BuildContext context) {
     
@@ -96,33 +106,97 @@ class _ConvitesRecebidosState extends State<ConvitesRecebidos> {
     );
   }
 
+*/ //=====================================================================================
+
+// --- Card do Convite ---
+  Widget _buildConviteCard(Convite convite) {
+    final dateFormat = DateFormat('dd/MM/yyyy');
+    
+    // Idealmente, o Store buscaria o nome do usuário. Por enquanto usamos o ID.
+    final remetente = "Usuário ...${convite.idUsuarioConvidador.substring(0, 5)}";
+
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.mark_email_unread, color: Color(0xFF1E90FF)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Convite de $remetente',
+                    style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 5),
+            Text(
+              'Recebido em: ${dateFormat.format(convite.dataEnvio)}',
+              style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 15),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => _responderConvite(convite, false),
+                  child: Text('Recusar', style: GoogleFonts.poppins(color: Colors.red)),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () => _responderConvite(convite, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: Text('Aceitar', style: GoogleFonts.poppins(color: Colors.white)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+
   @override
   Widget build(BuildContext context) {
-    final conviteProvider = context.watch<ConviteStore>();
-    final List<Convite> convites = conviteProvider.convitesRecebidos;
-    final bool isLoading = conviteProvider.isLoading;
-    final String? errorMessage = conviteProvider.errorMessage;
+    final conviteStore = context.watch<ConviteStore>();
+    final convites = conviteStore.convitesRecebidos;
+    final isLoading = conviteStore.isLoading;
+      
 
 
     // --- Renderização de Estados ---
     Widget bodyContent;
 
-    if (isLoading && convites.isEmpty) {
+    if (isLoading) {
       bodyContent = const Center(child: CircularProgressIndicator());
-    } else if (errorMessage != null) {
-      bodyContent = Center(child: Text('Erro ao carregar convites: $errorMessage', style: const TextStyle(color: Colors.red)));
     } else if (convites.isEmpty) {
       bodyContent = Center(
-          child: Text('Você não tem convites pendentes.', style: GoogleFonts.poppins(fontSize: 16, color: Colors.black54)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.inbox, size: 60, color: Colors.grey),
+            const SizedBox(height: 10),
+            Text('Nenhum convite pendente.', style: GoogleFonts.poppins(color: Colors.grey)),
+          ],
+        ),
       );
     } else {
-      // Lista de Convites
       bodyContent = ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 10.0),
+        padding: const EdgeInsets.symmetric(vertical: 10),
         itemCount: convites.length,
-        itemBuilder: (context, index) {
-          return _buildConviteCard(convites[index], context);
-        },
+        itemBuilder: (ctx, i) => _buildConviteCard(convites[i]),
       );
     }
 

@@ -118,15 +118,19 @@ class FirestoreService {
       // 1. Busca permissões
       final permissoesSnap = await _db
           .collection('permissoes')
-          .where('idUsuario', isEqualTo: userId)
+          .where('id_usuario', isEqualTo: userId)
           .get();
-
+//espião
+//      print("✅ Permissões encontradas: ${permissoesSnap.docs.length}");
+//espião
       // 2. Extrai IDs (com casting seguro para Map)
       final cofreIds = permissoesSnap.docs
-          .map((doc) => (doc.data() as Map<String, dynamic>)['idCofre'] as String)
+          .map((doc) => (doc.data() as Map<String, dynamic>)['id_cofre'] as String)
           .toSet()
           .toList();
-
+//espião (teste improvisado apara achar inconsistencia)
+//      print("🆔 IDs de cofres encontrados: $cofreIds");
+//espião
       if (cofreIds.isEmpty) return [];
 
       // 3. Chunking para buscar os cofres
@@ -142,10 +146,29 @@ class FirestoreService {
             .where(FieldPath.documentId, whereIn: chunk)
             .get();
 
-        todosOsCofres.addAll(
-          cofresSnap.docs.map((doc) => Cofre.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>)).toList(),
-        );
+
+/* espião (teste improvisado apara achar inconsistencia)
+        print("📦 Documentos baixados no chunk $i: ${cofresSnap.docs.length}");
+// espião 
+*/
+        // Tenta converter um por um para achar o "Cofre Podre"
+        for (var doc in cofresSnap.docs) {
+          try {
+            final cofre = Cofre.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>);
+            todosOsCofres.add(cofre);
+          } catch (e) {
+            print("🚨 ERRO AO CONVERTER COFRE (ID: ${doc.id}): $e");
+            print("Dados do documento: ${doc.data()}");
+          }
+        }
+
+
+
       }
+
+/* espião (teste improvisado apara achar inconsistencia)
+      print("🏁 Total de cofres válidos retornados: ${todosOsCofres.length}");
+*/
 
       return todosOsCofres;
     } catch (e) {
@@ -158,14 +181,18 @@ class FirestoreService {
 
   Future<void> addContribuicao(Contribuicao contribuicao) async {
     await _db.collection('contribuicoes').add(contribuicao.toJson());
-    // NOTA: Removemos a atualização de 'despesasTotal' aqui para não misturar conceitos.
-    // O saldo será calculado pelo Provider.
+
+
+    // 2. Incrementa o campo 'totalArrecadado' no Cofre
+    await _db.collection('cofres').doc(contribuicao.idCofre).update({
+      'totalArrecadado': FieldValue.increment(contribuicao.valor),
+    });
   }
 
   Future<List<Contribuicao>> getContribuicoesDoCofre(String cofreId) async {
     final snapshot = await _db
         .collection('contribuicoes')
-        .where('idCofre', isEqualTo: cofreId)
+        .where('id_cofre', isEqualTo: cofreId)
         .orderBy('data', descending: true)
         .get();
 
@@ -179,8 +206,8 @@ class FirestoreService {
   Future<void> criarPermissao(Permissao permissao) async {
     final existing = await _db
         .collection('permissoes')
-        .where('idUsuario', isEqualTo: permissao.idUsuario)
-        .where('idCofre', isEqualTo: permissao.idCofre)
+        .where('id_usuario', isEqualTo: permissao.idUsuario)
+        .where('id_cofre', isEqualTo: permissao.idCofre)
         .limit(1)
         .get();
 
@@ -192,7 +219,7 @@ class FirestoreService {
   Future<List<Permissao>> getMembrosCofre(String cofreId) async {
     final snapshot = await _db
         .collection('permissoes')
-        .where('idCofre', isEqualTo: cofreId)
+        .where('id_cofre', isEqualTo: cofreId)
         .get();
     return snapshot.docs.map((doc) => Permissao.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>)).toList();
   }
@@ -219,7 +246,7 @@ class FirestoreService {
   Future<List<Convite>> getConvitesRecebidos(String userId) async {
     final snapshot = await _db
         .collection('convites')
-        .where('idUsuarioConvidado', isEqualTo: userId)
+        .where('id_usuario_convidado', isEqualTo: userId)
         .where('status', isEqualTo: 'pendente')
         .get();
     return snapshot.docs.map((doc) => Convite.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>)).toList();

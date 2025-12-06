@@ -7,55 +7,36 @@ class Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Color(0xFF1E90FF),
+      width: double.infinity,
+      height: 120, // Altura fixa para o cabeçalho
+      color: const Color(0xFF1E90FF),
       child: Stack(
         children: [
+          // Logo (Esquerda)
+          Positioned(
+            top: 40, // Ajuste fino para status bar
+            left: 20,
+            child: Image.asset(
+              'assets/images/logosemletra.png',
+              height: 60, // Tamanho ajustado
+            ),
+          ),
           
-        Container(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30.0),
-              child: Stack(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    height: 120,
-                  ),
-                  Positioned(
-                    top: 32,
-                    left: 0,
-                    child: Image.asset(
-                      'assets/images/logosemletra.png',
-                      height: 80,
-                    ),
-                  ),
-                  Positioned(
-                    top: 62,
-                    right: 0,
-                    child: Text(
-                      'CofreTrip',
-                      style: GoogleFonts.poppins(
-                          fontSize: 20.0,
-                          color: Color.fromARGB(255, 255, 255, 255),
-                      ),
-                    ),
-                  ),
-                ],
+          // Texto (Direita)
+          Positioned(
+            top: 55, // Alinhado visualmente com a logo
+            right: 30,
+            child: Text(
+              'CofreTrip',
+              style: GoogleFonts.poppins(
+                fontSize: 22.0,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
           ),
-
-
-
-
-
-
         ],
       ),
     );
   }
 }
-
-/*
-
-          
-*/

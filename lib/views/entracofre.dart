@@ -1,12 +1,21 @@
+// Imports essenciais
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Para FilteringTextInputFormatter
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+
+//Imports das Views
 import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
-import '../stores/cofreStore.dart'; // Seu CofreProvider
-import '../stores/authStore.dart'; // Seu AuthStore
-import 'home.dart';
+
+// Imports dos Stores
+import 'package:travelbox/stores/cofreStore.dart';
+import 'package:travelbox/stores/authStore.dart';
+
+// Import do utils
+import 'package:travelbox/utils/feedbackHelper.dart';
+
+
 class Entracofre extends StatefulWidget {
   const Entracofre({super.key});
 
@@ -17,86 +26,22 @@ class Entracofre extends StatefulWidget {
 class _EntracofreState extends State<Entracofre> {
   // --- Controladores e Serviços ---
   final TextEditingController _codigoController = TextEditingController();
-  bool _isLoading = false;
 
-  void _showSnackBar(String message, {bool isError = false}) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
-        duration: const Duration(seconds: 4),
-      ),
-    );
-  }
-
-  // --- Lógica de Entrar no Cofre ---
-  Future<void> _handleJoinCofre() async {
-    // 1. Inicia o Loading
-    setState(() {
-      _isLoading = true;
-    });
-
-    final codigoAcesso = _codigoController.text.trim().toUpperCase();
-
-    if (codigoAcesso.isEmpty) {
-      _showSnackBar('Insira um código de acesso.', isError: true);
-      setState(() {
-        _isLoading = false;
-      });
-      return;
-    }
-    
-    // --- ACESSA PROVIDERS E VERIFICAÇÃO DE SEGURANÇA ---
-    final cofreProvider = Provider.of<CofreStore>(context, listen: false);
-    final authStore = Provider.of<AuthStore>( context, listen: false);
-
-    // 2. Verifica se o usuário está logado
-    if (authStore.usuario?.id == null) {
-        _showSnackBar('Você precisa estar logado para entrar em um cofre.', isError: true);
-        setState(() { _isLoading = false; });
-        return;
-    }
-    
-    final String userId = authStore.usuario!.id!;
-
-    // 3. Chama o Provider para buscar e se juntar ao cofre
-    final String? errorMessage = await cofreProvider.entrarComCodigo(
-      codigoAcesso,
-      userId,
-    );
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (errorMessage == null) {
-      // SUCESSO! Agora, navegamos para a tela de lista (Home) para que o novo cofre apareça
-      _showSnackBar('Cofre acessado com sucesso! Redirecionando...', isError: false);
-
-      // 4. NAVEGAÇÃO FINAL para a lista (Home), pois o cofreProvider já atualizou a lista
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => const Home(),
-          ),
-        );
-      }
-    } else {
-      // FALHA!
-      _showSnackBar(errorMessage, isError: true);
-    }
-  }
-  
+/*         se tiver dando Erro tira esse codigo do comentario 
   @override
   void dispose() {
     _codigoController.dispose();
     super.dispose();
   }
-
+*/
 
   @override
   Widget build(BuildContext context) {
+
+    final cofreStore = context.watch<CofreStore>();
+    final isLoading = cofreStore.isLoading;
+
+
     return Scaffold(
       backgroundColor: const Color(0xFF1E90FF),
       body: Column(
@@ -128,11 +73,14 @@ class _EntracofreState extends State<Entracofre> {
                     ),
 
                     const SizedBox(height: 20.0),
+
+
                     // CAMPO PARA CÓDIGO
                     TextField(
-                      controller: _codigoController, // LIGADO AO CONTROLADOR
+                      controller: _codigoController, 
                       keyboardType: TextInputType.text,
-                      textCapitalization: TextCapitalization.characters, // Garante que o input é maiúsculo
+                      textCapitalization: TextCapitalization.characters,
+                      enabled: !isLoading, 
                       decoration: InputDecoration(
                         labelText: 'Código do Cofre',
                         labelStyle: GoogleFonts.poppins(),
@@ -154,7 +102,40 @@ class _EntracofreState extends State<Entracofre> {
 
                     // BOTÃO DE CONFIRMAR
                     ElevatedButton(
-                    onPressed: _isLoading ? null : _handleJoinCofre, // LIGADO À LÓGICA
+                    onPressed: isLoading ? null : () async {
+                      FocusScope.of(context).unfocus();
+                        final codigo = _codigoController.text.trim();
+
+                        if (codigo.isEmpty) {
+                          FeedbackHelper.mostrarErro(context, "Digite o código.");
+                          return;
+                        }
+
+                        // Lógica com Stores
+                        final authStore = context.read<AuthStore>();
+                        final store = context.read<CofreStore>();
+
+                        if (authStore.usuario?.id == null) return;
+
+                        // Chama a ação
+                        String? erro = await store.entrarComCodigo(
+                          codigo, 
+                          authStore.usuario!.id!
+                        );
+
+                        if (!mounted) return;
+
+                        if (erro == null) {
+                          // Sucesso
+                          FeedbackHelper.mostrarSucesso(context, "Você entrou no cofre!");
+                          Navigator.pop(context); // Volta para a Home atualizada
+                        } else {
+                          // Erro
+                          FeedbackHelper.mostrarErro(context, erro);
+                        }
+                    },
+                    
+                     // LIGADO À LÓGICA
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1E90FF),
                       padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -162,7 +143,7 @@ class _EntracofreState extends State<Entracofre> {
                         borderRadius: BorderRadius.circular(8.0),
                       ),
                     ),
-                    child: _isLoading
+                    child: isLoading
                           ? const SizedBox(
                               width: 20,
                               height: 20,
