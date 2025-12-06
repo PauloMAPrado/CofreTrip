@@ -128,7 +128,7 @@ class _ListaUserState extends State<ListaUser> {
                         // Navega de volta para o Dashboard do Cofre
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (context) => Cofre(cofreId: widget.cofreId)),
+                          MaterialPageRoute(builder: (context) => CofreScreen(cofreId: widget.cofreId)),
                         );
                       },
                       style: ElevatedButton.styleFrom(

@@ -13,16 +13,16 @@ import 'package:travelbox/models/cofre.dart' as cofre_model;
 // Importe o seu modelo de dados e o provider de detalhes
 import '../stores/detalhesCofreStore.dart';
 
-class Cofre extends StatefulWidget { // Mantenha como StatefulWidget para initState
+class CofreScreen extends StatefulWidget { // Mantenha como StatefulWidget para initState
   final String cofreId; 
   
-  const Cofre({super.key, required this.cofreId});
+  const CofreScreen({super.key, required this.cofreId});
 
   @override
-  State<Cofre> createState() => _CofreState();
+  State<CofreScreen> createState() => _CofreScreenState();
 }
 
-class _CofreState extends State<Cofre> {
+class _CofreScreenState extends State<CofreScreen> {
   // --- Formatação de Moeda e Data ---
   final NumberFormat _currencyFormat = NumberFormat.currency(
     locale: 'pt_BR', 

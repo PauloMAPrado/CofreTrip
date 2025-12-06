@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 
@@ -8,7 +10,8 @@ class Cofre {
   String nome;
   String? descricao;
   int valorPlano;
-  int despesasTotal;
+  int despesasTotal; // para o futuro
+  double totalArrecadado; // progresso (novo campo!)
   DateTime dataCriacao;
   DateTime? dataViagem;
   final String joinCode;
@@ -18,6 +21,7 @@ class Cofre {
     required this.nome,
     required this.valorPlano,
     required this.despesasTotal,
+    this.totalArrecadado = 0.0, // Inicia zerado
     required this.dataCriacao,
     this.descricao,
     this.dataViagem,
@@ -44,6 +48,7 @@ class Cofre {
       nome: nome,
       valorPlano: valorPlano,
       despesasTotal: 0,
+      totalArrecadado: 0.0,
       dataCriacao: DateTime.now(), // Data atual
       dataViagem: dataViagem, // Data de Início da Viagem do formulário
       joinCode: _generateJoinCode(6), // Gera um código de 6 dígitos
@@ -64,6 +69,8 @@ class Cofre {
       // CORREÇÃO 2: Conversão segura de num para int
       valorPlano: (data['valor_plano'] as num).toInt(),
       despesasTotal: (data['despesas_total'] as num).toInt(),
+
+      totalArrecadado: (data['totalArrecadado'] as num?)?.toDouble() ?? 0.0,
       
       dataCriacao: (data['data_criacao'] as Timestamp).toDate(),
       dataViagem: data['data_viagem'] != null
@@ -81,6 +88,7 @@ class Cofre {
       'descricao': descricao,
       'valor_plano': valorPlano,
       'despesas_total': despesasTotal,
+      'totalArrecadado': totalArrecadado,
       'data_criacao': dataCriacao,
       'data_viagem': dataViagem,
       'joinCode': joinCode,
@@ -93,6 +101,7 @@ class Cofre {
     String? descricao,
     int? valorPlano,
     int? despesasTotal,
+    double? totalArrecadado,
     DateTime? dataCriacao,
     DateTime? dataViagem,
     String? joinCode,
@@ -104,6 +113,7 @@ class Cofre {
       descricao: descricao ?? this.descricao,
       valorPlano: valorPlano ?? this.valorPlano,
       despesasTotal: despesasTotal ?? this.despesasTotal,
+      totalArrecadado: totalArrecadado ?? this.totalArrecadado,
       dataCriacao: dataCriacao ?? this.dataCriacao,
       dataViagem: dataViagem ?? this.dataViagem,
       joinCode: joinCode ?? this.joinCode,

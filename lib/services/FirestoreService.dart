@@ -158,8 +158,12 @@ class FirestoreService {
 
   Future<void> addContribuicao(Contribuicao contribuicao) async {
     await _db.collection('contribuicoes').add(contribuicao.toJson());
-    // NOTA: Removemos a atualização de 'despesasTotal' aqui para não misturar conceitos.
-    // O saldo será calculado pelo Provider.
+
+
+    // 2. Incrementa o campo 'totalArrecadado' no Cofre
+    await _db.collection('cofres').doc(contribuicao.idCofre).update({
+      'totalArrecadado': FieldValue.increment(contribuicao.valor),
+    });
   }
 
   Future<List<Contribuicao>> getContribuicoesDoCofre(String cofreId) async {

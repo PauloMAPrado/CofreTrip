@@ -1,18 +1,26 @@
+//Imports Essenciais
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+
+//Imports das views para navegação
 import 'package:travelbox/views/criacofre.dart';
 import 'package:travelbox/views/entracofre.dart';
 import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
-import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
-// Imports de lógica
-import '../stores/cofreStore.dart'; 
-import '../stores/authStore.dart'; 
-import '../stores/ConviteStore.dart'; // NOVO: Para buscar convites
-import '../models/cofre.dart' as CofreModel; 
-import 'cofre.dart'; 
-import 'convitesrecebidos.dart'; // Importa a tela de Notificações
+import 'package:travelbox/views/cofre.dart';
+import 'package:travelbox/views/convitesrecebidos.dart';
+
+
+//Imports dos STORES (Para o gerenciamento de estado) 
+import 'package:travelbox/stores/cofreStore.dart'; 
+import 'package:travelbox/stores/authStore.dart'; 
+import 'package:travelbox/stores/ConviteStore.dart';
+
+//Imports Models 
+import 'package:travelbox/models/cofre.dart'; 
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -22,33 +30,31 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  bool _isInitialLoad = true; 
   
   final NumberFormat _currencyFormat = NumberFormat.currency(
     locale: 'pt_BR', 
     symbol: 'R\$',
-    decimalDigits: 0,
+    decimalDigits: 2,
   );
 
-  // 🚀 Lógica de carregamento de dados (Chamado uma vez ao entrar na tela)
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    
-    if (_isInitialLoad) {
-      final authStore = Provider.of<AuthStore>(context, listen: false);
-      final cofreProvider = Provider.of<CofreStore>(context, listen: false);
-      final conviteProvider = Provider.of<ConviteStore>(context, listen: false); 
-      
-      if (authStore.usuario?.id?.isNotEmpty ?? false) {
-        final userId = authStore.usuario!.id!;
-        
-        // 🎯 DISPARA A BUSCA DE COFRES E CONVITES
-        cofreProvider.carregarCofres(userId); 
-        conviteProvider.carregarConvites(userId);
-      }
-      
-      _isInitialLoad = false;
+  void initState() {
+    super.initState();
+    // Garante que os dados sejam carregados logo após a tela ser desenhada
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _carregarDados();
+    });
+  }
+
+  void _carregarDados() {
+    final authStore = Provider.of<AuthStore>(context, listen: false);
+    final cofreStore = Provider.of<CofreStore>(context, listen: false);
+    final conviteStore = Provider.of<ConviteStore>(context, listen: false);
+
+    if(authStore.usuario?.id != null){
+      final userId = authStore.usuario!.id!;
+      cofreStore.carregarCofres(userId);
+      conviteStore.carregarConvites(userId);
     }
   }
   
@@ -89,31 +95,37 @@ class _HomeState extends State<Home> {
     );
   }
 
-  // --- Widget para Exibir Cada Cofre na Lista (Item) ---
-  Widget _buildCofreItem(BuildContext context, CofreModel.Cofre cofre) {
+  // --- Item da Lista de Cofres ---          ++++++++++++         PAREI AQUIIIIIIIII    +++++++++++++++++++
+  Widget _buildCofreItem(BuildContext context, Cofre cofre) {
     
-    final valorAlvo = cofre.valorPlano.toDouble(); 
-    final valorAtual = 0.0;
+    final double meta = cofre.valorPlano.toDouble(); 
     
-    final valorAlvoFormatado = _currencyFormat.format(valorAlvo);
-    final progress = valorAlvo > 0 ? (valorAtual / valorAlvo).clamp(0.0, 1.0) : 0.0;
+    // 2. ARRECADADO (O Progresso Real - Novo Campo!)
+    final double arrecadado = cofre.totalArrecadado; 
     
-    final String? cofreId = cofre.id; 
+    // 3. CÁLCULO DA PORCENTAGEM
+    // Se a meta for 0, o progresso é 0 para não dividir por zero.
+    // O .clamp(0.0, 1.0) garante que a barra não estoure se você arrecadar mais que 100%.
+    final double progress = meta > 0 ? (arrecadado / meta).clamp(0.0, 1.0) : 0.0;
+
+    final String metaFormatada = _currencyFormat.format(meta);
+    final String arrecadadoFormatado = _currencyFormat.format(arrecadado);
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: InkWell(
+        borderRadius: BorderRadius.circular(12),
         onTap: () {
-          if (cofreId == null || cofreId.isEmpty) {
+          if (cofre.id == null || cofre.id!.isEmpty) {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erro: ID do cofre não encontrado.')));
             return;
           }
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => Cofre(cofreId: cofreId), 
+              builder: (context) => CofreScreen(cofreId: cofre.id!), 
             ),
           );
         },
@@ -130,22 +142,83 @@ class _HomeState extends State<Home> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Meta: $valorAlvoFormatado',
-                    style: GoogleFonts.poppins(fontSize: 14, color: Colors.black54),
+                  Expanded(child: Text(
+                      cofre.nome,
+                      style: GoogleFonts.poppins(fontSize: 14, color: Colors.black54),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  Text(
-                    '${(progress * 100).toStringAsFixed(0)}%',
-                    style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.green),
+
+                  Icon(
+                    arrecadado >= meta ? Icons.check_circle : Icons.flight_takeoff, 
+                    color: arrecadado >= meta ? Colors.green : const Color(0xFF1E90FF)
                   ),
                 ],
               ),
+
+
               const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: progress,
-                backgroundColor: Colors.grey[300],
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1E90FF)),
-                minHeight: 5,
+
+
+              // Barra de Progresso
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: Colors.grey[200],
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    arrecadado >= meta ? Colors.green : const Color(0xFF1E90FF)
+                    ),
+                  minHeight: 8,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Juntado',
+                        style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                      Text(
+                        arrecadadoFormatado, // Mostra quanto já entrou de dinheiro
+                        style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Meta',
+                        style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                      Text(
+                        metaFormatada, // Mostra o objetivo final
+                        style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 5),
+              
+              // Porcentagem no rodapé
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  '${(progress * 100).toStringAsFixed(0)}%',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12, 
+                    fontWeight: FontWeight.bold, 
+                    color: arrecadado >= meta ? Colors.green : const Color(0xFF1E90FF)
+                  ),
+                ),
               ),
             ],
           ),
@@ -154,7 +227,11 @@ class _HomeState extends State<Home> {
     );
   }
 
-  
+
+/*  =========================================== codigo antigo ==================================
+
+
+
   // --- Renderização dos Botões (Adaptável e Finalizado) ---
   Widget _buildActionButtons({required bool isListEmpty}) {
     const Color highlightColor = Color.fromARGB(255, 255, 179, 72); 
@@ -207,72 +284,94 @@ class _HomeState extends State<Home> {
     );
   }
 
-  // --- Cartão de Estatísticas Simples (Omitido para brevidade) ---
-  Widget _buildStatsCard(int totalCofres, double totalMetas) {
-    // Cálculo do total de arrecadação de todos os cofres
-    final double totalArrecadado = 100.0; // Placeholder
-    
-    return Card(
-      elevation: 6,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      color: const Color(0xFF1E90FF), // Fundo Primário
-      margin: const EdgeInsets.only(bottom: 20, top: 10),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            Column(
-              children: [
-                Text('Total de Viagens', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14)),
-                const SizedBox(height: 5),
-                Text(totalCofres.toString(), style: GoogleFonts.lato(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
-              ],
+*/  //=========================================== codigo antigo ==================================
+
+
+// --- Botões de Ação (Criar/Entrar) ---
+  Widget _buildActionButtons(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const Criacofre())),
+            icon: const Icon(Icons.add_circle_outline, color: Colors.white),
+            label: const Text('Novo Cofre', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1E90FF),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            Container(width: 1, height: 40, color: Colors.white30),
-            Column(
-              children: [
-                Text('Total Arrecadado', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14)),
-                const SizedBox(height: 5),
-                Text(_currencyFormat.format(totalArrecadado), style: GoogleFonts.lato(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ],
+          ),
         ),
-      ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const Entracofre())),
+            icon: const Icon(Icons.vpn_key, color: Colors.white), // Ícone de chave/código
+            label: const Text('Entrar', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orangeAccent, // Cor diferente para destacar
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
 
+
+
+
+
+
+  // --- Card de Estatísticas Gerais ---
+  Widget _buildStatsCard(List<Cofre> cofres) {
+    final int totalViagens = cofres.length;
+    // Soma o valor 'despesasTotal' de todos os cofres para saber o total arrecadado geral
+    final double totalGuardado = cofres.fold(0.0, (sum, c) => sum + c.despesasTotal);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E90FF),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.blue.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5)),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatItem("Viagens", totalViagens.toString()),
+          Container(width: 1, height: 40, color: Colors.white24), // Divisória
+          _buildStatItem("Total Guardado", _currencyFormat.format(totalGuardado)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value) {
+      return Column(
+        children: [
+          Text(value, style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+          const SizedBox(height: 4),
+          Text(label.toUpperCase(), style: GoogleFonts.poppins(fontSize: 10, color: Colors.white70, letterSpacing: 1)),
+        ],
+      );
+    }
+
   @override
   Widget build(BuildContext context) {
-    // 1. Obtém o estado
-    final cofreProvider = context.watch<CofreStore>();
+    // Assistindo os Stores
+    final cofreStore = context.watch<CofreStore>();
     final authStore = context.watch<AuthStore>();
-    final conviteProvider = context.watch<ConviteStore>(); // Lendo o Provider de Convites
+    final conviteStore = context.watch<ConviteStore>();
 
-    final List<CofreModel.Cofre> cofres = cofreProvider.cofres;
-    final bool isLoading = cofreProvider.isLoading;
-    final String? errorMessage = cofreProvider.errorMessage;
-
-    // 2. Cálculo de dados e contagens
-    final int totalCofres = cofres.length;
-    final double totalMetas = cofres.fold(0.0, (sum, cofre) => sum + cofre.valorPlano);
-    final int convitesCount = conviteProvider.convitesRecebidos.length; // Contagem de convites
-
-    final userName = authStore.usuario?.nome ?? "Viajante";
-    final String welcomeMessage = "Boas-vindas, $userName!";
-    
-    // --- RENDERIZAÇÃO DE ESTADOS ---
-    if (isLoading && cofres.isEmpty) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-    
-    if (errorMessage != null) {
-      return Scaffold(body: Center(child: Text('Erro: $errorMessage. Por favor, reinicie.', style: GoogleFonts.poppins(color: Colors.red))));
-    }
-
-    final bool isListEmpty = cofres.isEmpty;
+    final user = authStore.usuario;
+    final cofres = cofreStore.cofres;
+    final convitesCount = conviteStore.convitesRecebidos.length;
 
     return Scaffold(
       backgroundColor: const Color(0xFF1E90FF),
@@ -280,68 +379,67 @@ class _HomeState extends State<Home> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Header(),
+
           Expanded(
             child: Container(
               decoration: const BoxDecoration(
                 color: Color(0xFFF4F9FB),
-                borderRadius: BorderRadius.only(topLeft: Radius.circular(50.0), topRight: Radius.circular(50.0)),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(50.0), 
+                  topRight: Radius.circular(50.0)),
               ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+              child: RefreshIndicator(
+                onRefresh: () async => _carregarDados(),
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 30, 20, 80), // Espaço extra em baixo p/ navbar
                   children: [
-                    const SizedBox(height: 30.0),
-                    // SAUDAÇÃO
-                    Text(welcomeMessage, textAlign: TextAlign.left, style: GoogleFonts.lato(fontSize: 20.0, fontWeight: FontWeight.bold, color: const Color(0xFF1E90FF))),
-                    const SizedBox(height: 10.0),
-                    
-                    // 🎯 ALERTA DE CONVITE APARECE AQUI!
-                    _buildInviteAlert(context, convitesCount), 
-
-                    Text('Suas Viagens', textAlign: TextAlign.center, style: GoogleFonts.lato(fontSize: 24.0, fontWeight: FontWeight.bold, color: const Color(0xFF333333))),
-                    const SizedBox(height: 10.0),
-
-                    // CARTÃO DE ESTATÍSTICAS
-                    if (!isListEmpty) 
-                      _buildStatsCard(totalCofres, totalMetas),
-                    
-                    // D. Renderiza Lista ou Tela Vazia
-                    Expanded(
-                      child: isListEmpty
-                          ? Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                // Mensagem de incentivo
-                                Text('Aparentemente você não tem cofres. Crie ou entre em um!', textAlign: TextAlign.center, style: GoogleFonts.poppins(color: Colors.black54)),
-                                const SizedBox(height: 40),
-                                // Botões grandes e centrais
-                                _buildActionButtons(isListEmpty: true), 
-                              ],
-                            )
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Título da Lista
-                                Text('Minhas Viagens Ativas (${totalCofres})', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87)),
-                                const SizedBox(height: 10.0),
-                                
-                                // Botões pequenos (Criar/Entrar)
-                                _buildActionButtons(isListEmpty: false),
-                                const SizedBox(height: 10.0),
-                                
-                                // Lista de Cofres
-                                Expanded(
-                                  child: ListView.builder(
-                                    itemCount: cofres.length,
-                                    itemBuilder: (context, index) {
-                                      return _buildCofreItem(context, cofres[index]);
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
+                    // Saudação
+                    Text(
+                      "Olá, ${user?.nome ?? 'Viajante'}!",
+                      style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
                     ),
+                    const SizedBox(height: 5),
+                    Text(
+                      "Vamos planejar sua próxima aventura?",
+                      style: GoogleFonts.poppins(fontSize: 14, color: Colors.black54),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Alertas
+                    _buildInviteAlert(context, convitesCount),
+
+                    // Estatísticas
+                    _buildStatsCard(cofres),
+                    const SizedBox(height: 25),
+
+                    // Botões de Ação
+                    _buildActionButtons(context),
+                    const SizedBox(height: 25),
+
+                    // Lista de Cofres
+                    Text(
+                      "Meus Cofres",
+                      style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                    ),
+                    const SizedBox(height: 10),
+
+                    if (cofreStore.isLoading)
+                      const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
+                    else if (cofres.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(30.0),
+                          child: Column(
+                            children: [
+                              Icon(Icons.luggage, size: 60, color: Colors.grey[300]),
+                              const SizedBox(height: 10),
+                              Text("Nenhum cofre encontrado.\nCrie o seu primeiro!", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey[500])),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      ...cofres.map((c) => _buildCofreItem(context, c)).toList(),
                   ],
                 ),
               ),
