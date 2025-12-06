@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+
+/*
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -249,6 +252,41 @@ class _CofreScreenState extends State<CofreScreen> {
           ),
           const Footbarr(),
         ],
+      ),
+    );
+  }
+}
+
+*/
+
+
+
+
+// Comando para teste 
+
+import 'package:flutter/material.dart';
+
+// Esta é uma tela temporária só para testar a navegação da Home
+class CofreScreen extends StatelessWidget {
+  final String cofreId;
+
+  const CofreScreen({super.key, required this.cofreId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Detalhes (Em Construção)")),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.construction, size: 60, color: Colors.orange),
+            const SizedBox(height: 20),
+            Text("Você clicou no cofre ID:\n$cofreId", textAlign: TextAlign.center),
+            const SizedBox(height: 20),
+            const Text("Fase 3: Implementaremos esta tela a seguir!"),
+          ],
+        ),
       ),
     );
   }
