@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; 
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart'; 
@@ -7,15 +6,13 @@ import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 
 import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
+import 'package:travelbox/utils/feedbackHelper.dart'; 
 
-import '../stores/detalhesCofreStore.dart'; 
-import '../stores/authStore.dart'; 
-
+import 'package:travelbox/stores/detalhesCofreStore.dart'; 
+import 'package:travelbox/stores/authStore.dart'; 
 
 class Contribuicao extends StatefulWidget {
-  // CRÍTICO: O ID do Cofre é obrigatório
   final String cofreId;
-  
   const Contribuicao({super.key, required this.cofreId});
 
   @override
@@ -23,31 +20,12 @@ class Contribuicao extends StatefulWidget {
 }
 
 class _ContribuicaoState extends State<Contribuicao> {
-  // --- Controladores e Estado ---
   final TextEditingController _valorController = TextEditingController();
   final TextEditingController _dataController = TextEditingController();
   String? _formaPagamentoSelecionada; 
-  bool _isLoading = false; 
-
-  // --- Formatadores ---
+  
   final DateFormat _dateFormat = DateFormat('yyyy-MM-dd');
-  final _currencyMask = MaskTextInputFormatter(
-    mask: '##.###.###,00', 
-    filter: {"#": RegExp(r'[0-9]')},
-    type: MaskAutoCompletionType.lazy,
-  );
-
-  // --- Funções de UX e Validação ---
-  void _showSnackBar(String message, {bool isError = false}) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
-        duration: const Duration(seconds: 4),
-      ),
-    );
-  }
+  final _currencyMask = MaskTextInputFormatter(mask: '##.###.###,00', filter: {"#": RegExp(r'[0-9]')}, type: MaskAutoCompletionType.lazy);
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -62,78 +40,57 @@ class _ContribuicaoState extends State<Contribuicao> {
     }
   }
 
-  // --- Lógica Principal: Fazer Contribuição ---
   void _handleFazerContribuicao() async {
-    // 1. Inicia o Loading
-    setState(() { _isLoading = true; });
-
+    // 1. Validação Visual
     final valorRaw = _valorController.text.trim();
     final dataRaw = _dataController.text.trim();
-    final formaPagamento = _formaPagamentoSelecionada;
 
-    // 2. Validação Básica
-    if (valorRaw.isEmpty || dataRaw.isEmpty || formaPagamento == null) {
-      _showSnackBar('Preencha o valor, a data e a forma de pagamento.', isError: true);
-      setState(() { _isLoading = false; });
+    if (valorRaw.isEmpty || dataRaw.isEmpty || _formaPagamentoSelecionada == null) {
+      FeedbackHelper.mostrarErro(context, 'Preencha o valor, a data e a forma de pagamento.');
       return;
     }
     
-    // 3. Limpeza e Validação do Valor (R$ para double)
-    final cleanValor = valorRaw
-        .replaceAll('R\$', '')
-        .replaceAll('.', '') 
-        .replaceAll(',', '.') 
-        .trim(); 
-
+    // 2. Tratamento do Valor
+    final cleanValor = valorRaw.replaceAll('.', '').replaceAll(',', '.').trim(); 
     final double? valorContribuicao = double.tryParse(cleanValor);
+
     if (valorContribuicao == null || valorContribuicao <= 0) {
-      _showSnackBar('Insira um valor válido maior que R\$ 0,00.', isError: true);
-      setState(() { _isLoading = false; });
+      FeedbackHelper.mostrarErro(context, 'Insira um valor válido maior que R\$ 0,00.');
       return;
     }
 
-    // 4. Acessa Providers e Chama a Ação
-    final detalhesProvider = Provider.of<DetalhesCofreStore>(context, listen: false);
-    final authStore = Provider.of<AuthStore>(context, listen: false);
+    // 3. Acesso aos Stores
+    final detalhesStore = context.read<DetalhesCofreStore>();
+    final authStore = context.read<AuthStore>();
 
     if (authStore.usuario?.id == null) {
-        _showSnackBar('Erro de sessão. Faça login novamente.', isError: true);
-        setState(() { _isLoading = false; });
+        FeedbackHelper.mostrarErro(context, 'Erro de sessão. Faça login novamente.');
         return;
     }
     
-    // 5. Salva a transação
-    final userId = authStore.usuario!.id!;
-    final DateTime dataTransacao = DateTime.parse(dataRaw);
-
-    bool sucesso = await detalhesProvider.adicionarContribuicao(
-        cofreId: widget.cofreId, // Usando o ID recebido no construtor
-        usuarioId: userId,
+    // 4. Execução
+    bool sucesso = await detalhesStore.adicionarContribuicao(
+        cofreId: widget.cofreId,
+        usuarioId: authStore.usuario!.id!,
         valor: valorContribuicao,
-        data: dataTransacao,
+        data: DateTime.parse(dataRaw),
     );
     
-    // 6. Feedback e Navegação
-    setState(() { _isLoading = false; });
+    if (!mounted) return;
 
-    if (sucesso && mounted) {
-        _showSnackBar('Contribuição de R\$${valorContribuicao.toStringAsFixed(2)} registrada!', isError: false);
-        Navigator.pop(context); // Volta para o Dashboard do Cofre
+    if (sucesso) {
+        FeedbackHelper.mostrarSucesso(context, 'Contribuição de R\$${valorContribuicao.toStringAsFixed(2)} registrada!');
+        Navigator.pop(context); 
     } else {
-        final String msg = detalhesProvider.errorMessage ?? 'Falha ao registrar contribuição. Verifique a conexão.';
-        _showSnackBar(msg, isError: true);
+        FeedbackHelper.mostrarErro(context, detalhesStore.errorMessage);
     }
-  }
-
-  @override
-  void dispose() {
-    _valorController.dispose();
-    _dataController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // Loading Global do Store
+    final bool isLoading = context.watch<DetalhesCofreStore>().isLoading;
+
     return Scaffold(
       backgroundColor: const Color(0xFF1E90FF),
       body: Column(
@@ -142,13 +99,7 @@ class _ContribuicaoState extends State<Contribuicao> {
           const Header(),
           Expanded(
             child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(50),
-                  topRight: Radius.circular(50),
-                ),
-              ),
+              decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.only(topLeft: Radius.circular(50), topRight: Radius.circular(50))),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: SingleChildScrollView(
@@ -156,91 +107,57 @@ class _ContribuicaoState extends State<Contribuicao> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: 40.0),
-                      Text(
-                        'Selecione os dados para fazer sua contribuição ao cofre:',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
-                          fontSize: 20.0,
-                          color: const Color.fromARGB(255, 0, 0, 0),
-                        ),
-                      ),
+                      Text('Nova Contribuição', textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 20.0, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 30.0),
                       
-                      // 1. CAMPO VALOR
+                      // VALOR
                       TextField(
                         controller: _valorController,
-                        enabled: !_isLoading,
-                        decoration: InputDecoration(
-                          labelText: 'Valor da Contribuição',
-                          prefixIcon: const Icon(Icons.attach_money),
-                          prefixText: 'R\$ ',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0)),
-                        ),
+                        enabled: !isLoading,
+                        decoration: InputDecoration(labelText: 'Valor', prefixText: 'R\$ ', border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0))),
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        inputFormatters: [_currencyMask], // Aplica máscara de moeda
+                        inputFormatters: [_currencyMask],
                       ),
                       const SizedBox(height: 20.0),
                       
-                      // 2. CAMPO DATA (Seletor)
+                      // DATA
                       GestureDetector(
-                        onTap: _isLoading ? null : () => _selectDate(context),
+                        onTap: isLoading ? null : () => _selectDate(context),
                         child: AbsorbPointer(
                           child: TextField(
                             controller: _dataController,
-                            enabled: !_isLoading,
-                            decoration: InputDecoration(
-                              labelText: _dataController.text.isEmpty 
-                                  ? 'Data da Contribuição' : _dataController.text,
-                              prefixIcon: const Icon(Icons.calendar_today),
-                              suffixIcon: const Icon(Icons.arrow_drop_down),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0)),
-                            ),
-                            keyboardType: TextInputType.datetime,
+                            enabled: !isLoading,
+                            decoration: InputDecoration(labelText: 'Data', prefixIcon: const Icon(Icons.calendar_today), border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0))),
                           ),
                         ),
                       ),
                       const SizedBox(height: 20.0),
 
-                      // 3. FORMA DE PAGAMENTO (Dropdown)
+                      // PAGAMENTO
                       DropdownButtonFormField<String>(
-                        decoration: InputDecoration(
-                          labelText: 'Forma de Pagamento',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0)),
-                          prefixIcon: const Icon(Icons.payment),
-                        ),
+                        decoration: InputDecoration(labelText: 'Forma de Pagamento', border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0))),
                         value: _formaPagamentoSelecionada,
                         items: const [
                           DropdownMenuItem(value: 'cartao', child: Text('Cartão de Crédito')),
                           DropdownMenuItem(value: 'boleto', child: Text('Boleto Bancário')),
                           DropdownMenuItem(value: 'pix', child: Text('PIX')),
                         ],
-                        onChanged: (value) {
-                          setState(() {
-                            _formaPagamentoSelecionada = value;
-                          });
-                        },
+                        onChanged: (value) => setState(() => _formaPagamentoSelecionada = value),
                       ),
                       const SizedBox(height: 40.0),
 
-                      // BOTÃO FAZER CONTRIBUIÇÃO
+                      // BOTÃO
                       ElevatedButton(
-                        onPressed: _isLoading ? null : _handleFazerContribuicao,
+                        onPressed: isLoading ? null : _handleFazerContribuicao,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(255, 255, 187, 0), // Laranja/Amarelo
+                          backgroundColor: const Color.fromARGB(255, 255, 187, 0),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 15.0),
-                          child: _isLoading
-                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                              : Text(
-                                  'Fazer Contribuição',
-                                  style: GoogleFonts.poppins(fontSize: 16.0, color: Colors.white),
-                                ),
-                        ),
+                        child: isLoading
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white))
+                            : Text('Confirmar Depósito', style: GoogleFonts.poppins(fontSize: 16.0, color: Colors.white)),
                       ),
-                      
-                      const SizedBox(height: 20.0),
                     ],
                   ),
                 ),

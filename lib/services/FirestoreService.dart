@@ -121,15 +121,15 @@ class FirestoreService {
           .where('id_usuario', isEqualTo: userId)
           .get();
 //espião
-      print("✅ Permissões encontradas: ${permissoesSnap.docs.length}");
+//      print("✅ Permissões encontradas: ${permissoesSnap.docs.length}");
 //espião
       // 2. Extrai IDs (com casting seguro para Map)
       final cofreIds = permissoesSnap.docs
           .map((doc) => (doc.data() as Map<String, dynamic>)['id_cofre'] as String)
           .toSet()
           .toList();
-//espião
-      print("🆔 IDs de cofres encontrados: $cofreIds");
+//espião (teste improvisado apara achar inconsistencia)
+//      print("🆔 IDs de cofres encontrados: $cofreIds");
 //espião
       if (cofreIds.isEmpty) return [];
 
@@ -147,9 +147,10 @@ class FirestoreService {
             .get();
 
 
-// espião
+/* espião (teste improvisado apara achar inconsistencia)
         print("📦 Documentos baixados no chunk $i: ${cofresSnap.docs.length}");
-
+// espião 
+*/
         // Tenta converter um por um para achar o "Cofre Podre"
         for (var doc in cofresSnap.docs) {
           try {
@@ -161,14 +162,14 @@ class FirestoreService {
           }
         }
 
-// espião
 
-//        todosOsCofres.addAll(
-//          cofresSnap.docs.map((doc) => Cofre.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>)).toList(),
-//        );
+
       }
 
+/* espião (teste improvisado apara achar inconsistencia)
       print("🏁 Total de cofres válidos retornados: ${todosOsCofres.length}");
+*/
+
       return todosOsCofres;
     } catch (e) {
       print("Erro ao buscar cofres: $e");
