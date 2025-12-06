@@ -14,7 +14,7 @@ import 'package:travelbox/views/convitesrecebidos.dart';
 // STORES
 import 'package:travelbox/stores/cofreStore.dart';
 import 'package:travelbox/stores/authStore.dart';
-import 'package:travelbox/stores/conviteStore.dart'; // Nome corrigido (minúsculo)
+import 'package:travelbox/stores/ConviteStore.dart'; // Nome corrigido (minúsculo)
 
 // MODELS
 import 'package:travelbox/models/cofre.dart';

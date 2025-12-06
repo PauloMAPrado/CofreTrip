@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:travelbox/models/cofre.dart';
 import 'package:travelbox/models/contribuicao.dart';
 import 'package:travelbox/models/permissao.dart';
-import 'package:travelbox/models/usuario.dart';
-import 'package:travelbox/services/firestoreService.dart';
+import 'package:travelbox/models/Usuario.dart';
+import 'package:travelbox/services/FirestoreService.dart';
 
 class DetalhesCofreStore extends ChangeNotifier {
   final FirestoreService _firestoreService;
