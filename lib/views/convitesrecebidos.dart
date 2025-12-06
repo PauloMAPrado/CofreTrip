@@ -12,7 +12,7 @@ import 'package:travelbox/views/modules/header.dart';
 import 'package:travelbox/models/convite.dart';
 
 // Imports dos Stores
-import 'package:travelbox/stores/conviteStore.dart';
+import 'package:travelbox/stores/ConviteStore.dart';
 import 'package:travelbox/stores/authStore.dart';
 
 // Import do utils
