@@ -9,24 +9,35 @@ class DetalhesCofreStore extends ChangeNotifier {
   final FirestoreService _firestoreService;
 
   // --- VARIÁVEIS DE ESTADO ---
-  Cofre? _cofreAtivo; 
+  Cofre? _cofreAtivo;
   bool _isLoading = false;
   String? _errorMessage;
 
   // Listas de dados
   List<Contribuicao> _contribuicoes = [];
-  List<Permissao> _membros = []; 
+  List<Permissao> _membros = [];
 
   // Mapa para acesso rápido aos dados do usuário (ex: foto, nome) pelo ID
-  Map<String, Usuario> _contribuidoresMap = {}; 
-  
+  Map<String, Usuario> _contribuidoresMap = {};
+
   // --- GETTERS PÚBLICOS ---
-  Cofre? get cofreAtivo => _cofreAtivo; 
-  bool get isLoading => _isLoading; 
-  String? get errorMessage => _errorMessage; 
+  Cofre? get cofreAtivo => _cofreAtivo;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
   List<Contribuicao> get contribuicoes => _contribuicoes;
   List<Permissao> get membros => _membros;
   Map<String, Usuario> get contribuidoresMap => _contribuidoresMap;
+  // 🎯 NOVO GETTER: Retorna a lista de objetos Usuario que são membros do cofre.
+  List<Usuario> get participantesDoCofre {
+    // Pega os UIDs dos membros com permissão
+    final List<String> memberIds = _membros.map((p) => p.idUsuario).toList();
+
+    // Filtra o mapa de contribuidores para retornar apenas os objetos Usuario dos membros
+    return memberIds
+        .where((id) => _contribuidoresMap.containsKey(id))
+        .map((id) => _contribuidoresMap[id]!)
+        .toList();
+  }
 
   // Cálculo Dinâmico do Saldo (Fonte Única da Verdade)
   double get totalArrecadado {
@@ -40,25 +51,25 @@ class DetalhesCofreStore extends ChangeNotifier {
   // ----------------------------------------------------
   Future<void> carregarDadosCofre(String cofreId) async {
     _isLoading = true;
-    _errorMessage = null; 
-    notifyListeners(); 
+    _errorMessage = null;
+    notifyListeners();
 
     try {
       // 1. Buscas concorrentes (Cofre, Contribuições, Permissões)
       final results = await Future.wait([
-        _firestoreService.getCofreById(cofreId),        
-        _firestoreService.getContribuicoesDoCofre(cofreId), 
+        _firestoreService.getCofreById(cofreId),
+        _firestoreService.getContribuicoesDoCofre(cofreId),
         _firestoreService.getMembrosCofre(cofreId), // Corrigido nome do método
       ]);
 
-      _cofreAtivo = results[0] as Cofre?; 
+      _cofreAtivo = results[0] as Cofre?;
       _contribuicoes = results[1] as List<Contribuicao>;
-      _membros = results[2] as List<Permissao>; 
+      _membros = results[2] as List<Permissao>;
 
       if (_cofreAtivo == null) {
-          throw Exception("Cofre não encontrado ou acesso negado.");
+        throw Exception("Cofre não encontrado ou acesso negado.");
       }
-      
+
       // 2. Extrai os UIDs únicos das contribuições E dos membros
       // Assim garantimos que temos os dados de todo mundo
       final Set<String> todosIds = {};
@@ -67,20 +78,21 @@ class DetalhesCofreStore extends ChangeNotifier {
 
       if (todosIds.isNotEmpty) {
         // 3. Busca os perfis de usuário em massa
-        final List<Usuario> perfis = await _firestoreService.getUsuariosByIds(todosIds.toList());
+        final List<Usuario> perfis = await _firestoreService.getUsuariosByIds(
+          todosIds.toList(),
+        );
 
         // 4. Cria o mapa
-        _contribuidoresMap = { for (var user in perfis) user.id!: user }; 
+        _contribuidoresMap = {for (var user in perfis) user.id!: user};
       }
-
     } catch (e) {
       _errorMessage = "Erro ao carregar detalhes: ${e.toString()}";
-      _cofreAtivo = null; 
+      _cofreAtivo = null;
     } finally {
       _isLoading = false;
-      notifyListeners(); 
+      notifyListeners();
     }
-  } 
+  }
 
   // ----------------------------------------------------
   // ADICIONAR CONTRIBUIÇÃO
@@ -92,7 +104,7 @@ class DetalhesCofreStore extends ChangeNotifier {
     required DateTime data,
   }) async {
     _isLoading = true;
-    _errorMessage = null; 
+    _errorMessage = null;
     notifyListeners();
 
     try {
@@ -107,28 +119,27 @@ class DetalhesCofreStore extends ChangeNotifier {
       // 1. Salva a contribuição no Banco
       await _firestoreService.addContribuicao(nova);
 
-      // NOTA: Não precisamos chamar atualizarSaldoCofre, 
+      // NOTA: Não precisamos chamar atualizarSaldoCofre,
       // pois o getter 'totalArrecadado' soma tudo automaticamente.
-      
+
       // 2. OTIMIZAÇÃO: Atualiza a lista localmente
       // Inserimos no topo da lista para aparecer na hora, sem gastar internet recarregando tudo
-      _contribuicoes.insert(0, nova); 
+      _contribuicoes.insert(0, nova);
 
       // Se o usuário ainda não estava no mapa (primeira contribuição), buscamos ele
       if (!_contribuidoresMap.containsKey(usuarioId)) {
-         final user = await _firestoreService.getUsuario(usuarioId);
-         if (user != null) {
-           _contribuidoresMap[usuarioId] = user;
-         }
+        final user = await _firestoreService.getUsuario(usuarioId);
+        if (user != null) {
+          _contribuidoresMap[usuarioId] = user;
+        }
       }
 
       _isLoading = false;
       notifyListeners();
       return true;
-
     } catch (e) {
       _errorMessage = e.toString();
-      _isLoading = false; 
+      _isLoading = false;
       notifyListeners();
       return false;
     }
@@ -143,5 +154,4 @@ class DetalhesCofreStore extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
   }
-
 }
