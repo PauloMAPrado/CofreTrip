@@ -225,6 +225,9 @@ class _AccountState extends State<Account> {
               label: Text('Seja Pro', style: GoogleFonts.poppins(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.white)),
             ),
 
+            const SizedBox(height: 30.0),
+
+
             // // 3. Meus Cofres
             // const SizedBox(height: 16.0),
             // ElevatedButton(
