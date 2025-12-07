@@ -7,7 +7,7 @@ import 'package:travelbox/stores/detalhesCofreStore.dart';
 import 'package:travelbox/views/home.dart';
 import 'package:travelbox/views/login.dart';
 import 'package:travelbox/views/pageSplash.dart';
-import 'firebase_options.dart';
+import 'package:travelbox/firebase_options.dart';
 import 'package:provider/provider.dart';
 import 'package:travelbox/services/AuthService.dart';
 import 'package:travelbox/stores/authStore.dart';
