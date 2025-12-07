@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart'; 
-import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:travelbox/utils/currency_input_formatter.dart'; 
 
 import 'package:travelbox/views/modules/footbar.dart';
