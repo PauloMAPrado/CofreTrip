@@ -177,21 +177,36 @@ class AuthStore extends ChangeNotifier {
 
   Future<void> recoverPassword({required String email}) async {
     _actionStatus = ActionStatus.loading;
+    _errorMessage = null; 
     notifyListeners();
 
-    _errorMessage = await _authService.resetPassword(email: email);
-
-    if (_errorMessage == null) {
+    try {
+      // Tenta enviar o e-mail pelo Firebase
+      await _authService.resetPassword(email: email);
+      
+      // O Firebase (com proteção de enumeração) NUNCA retorna erro de "user-not-found".
+      // Ele finge que enviou, ou envia de verdade.
+      // Então, nós SEMPRE mostramos sucesso para o usuário.
       _actionStatus = ActionStatus.success;
-    } else {
-      _actionStatus = ActionStatus.error;
+
+    } catch (e) {
+      // Só capturamos erros reais de rede ou formato inválido
+      if (e.toString().contains('invalid-email')) {
+         _errorMessage = "O formato do e-mail é inválido.";
+         _actionStatus = ActionStatus.error;
+      } else {
+         // Para qualquer outro caso, fingimos sucesso também (segurança máxima)
+         _actionStatus = ActionStatus.success;
+      }
     }
 
     notifyListeners();
 
     Future.delayed(const Duration(seconds: 3), () {
-      _actionStatus = ActionStatus.initial;
-      notifyListeners();
+      if (hasListeners) { 
+        _actionStatus = ActionStatus.initial;
+        notifyListeners();
+      }
     });
   }
 
