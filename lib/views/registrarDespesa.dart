@@ -3,10 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import 'package:travelbox/stores/detalhesCofreStore.dart';
 // Imports Store/Providers
-import '../stores/detalhesCofreStore.dart'; 
 import '../stores/authStore.dart';  
 import '../stores/despesaStore.dart';     
 // Imports Models
@@ -14,7 +12,7 @@ import '../models/despesa.dart';
 import '../models/usuario.dart';             
 // Imports Utils
 import '../utils/feedbackHelper.dart';       
-import '../utils/currency_input_formatter.dart'; // 🎯 NOVO: Seu formatador customizado
+import '../utils/currency_input_formatter.dart'; 
 import 'modules/header.dart';
 import 'modules/footbar.dart';
 
@@ -35,26 +33,35 @@ class _RegistrarDespesaState extends State<RegistrarDespesa> {
   String? _pagadorId;
   bool _isLoading = false;
 
-  // 🎯 Formato de Moeda Customizado
+  // 🎯 NOVO: Rastreia o status de seleção (UserID -> Está selecionado para dividir?)
+  Map<String, bool> _membrosSelecionados = {}; 
+
+  // Formato de Moeda Customizado
   final CurrencyInputFormatter _decimalInputFormatter = CurrencyInputFormatter();
 
   @override
   void initState() {
     super.initState();
-    // Carrega participantes e define o usuário logado como pagador padrão
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final detalhesStore = Provider.of<DetalhesCofreStore>(context, listen: false);
       final authStore = Provider.of<AuthStore>(context, listen: false);
 
-      // Associa a lista de participantes real do Store ao estado local
       _participantes = detalhesStore.participantesDoCofre; 
-      
-      // Define o pagador como o usuário logado
       _pagadorId = authStore.usuario?.id;
       
       // Se não houver participantes, o usuário logado é o único
       if (_participantes.isEmpty && authStore.usuario != null) {
           _participantes.add(authStore.usuario!);
+      }
+      
+      // 🎯 NOVO: Inicializa o mapa de seleção (Todos marcados por padrão)
+      if (_participantes.isNotEmpty) {
+        _membrosSelecionados = Map.fromIterable(
+            _participantes,
+            key: (user) => user.id!, // Usa o ID do usuário como chave
+            value: (_) => true,       // Define 'true' como valor inicial
+        );
       }
       
       setState(() {});
@@ -79,7 +86,6 @@ class _RegistrarDespesaState extends State<RegistrarDespesa> {
       return;
     }
     
-    // 🎯 LIMPEZA DO VALOR (Lógica copiada do DecimalInputFormatter para validar)
     final cleanValor = valorRaw.replaceAll('.', '').replaceAll(',', '.').replaceAll(RegExp(r'[^0-9.]'), '');
     final double? valorTotal = double.tryParse(cleanValor);
 
@@ -87,14 +93,20 @@ class _RegistrarDespesaState extends State<RegistrarDespesa> {
       FeedbackHelper.mostrarErro(context, "Valor inválido.");
       return;
     }
+    
+    // 🎯 NOVO: Filtra apenas os participantes selecionados
+    final List<Usuario> devedoresSelecionados = _participantes
+        .where((user) => _membrosSelecionados[user.id!] == true)
+        .toList();
+
 
     setState(() => _isLoading = true);
     
-    // LÓGICA DE DIVISÃO (Divisão Igual entre todos os participantes)
-    final int numParticipantes = _participantes.length;
+    // LÓGICA DE DIVISÃO
+    final int numParticipantes = devedoresSelecionados.length;
     
     if (numParticipantes == 0) {
-        FeedbackHelper.mostrarErro(context, "Não há participantes válidos para divisão.");
+        FeedbackHelper.mostrarErro(context, "Selecione pelo menos um participante para dividir.");
         setState(() => _isLoading = false);
         return;
     }
@@ -103,8 +115,8 @@ class _RegistrarDespesaState extends State<RegistrarDespesa> {
     
     List<Map<String, double>> divisao = [];
     
-    // Cria a estrutura de divisão: {idUsuario: valorDevido}
-    for (var user in _participantes) {
+    // Cria a estrutura de divisão: {idUsuario: valorDevido} apenas para os SELECIONADOS
+    for (var user in devedoresSelecionados) {
       divisao.add({
         user.id!: valorDividido
       });
@@ -125,8 +137,7 @@ class _RegistrarDespesaState extends State<RegistrarDespesa> {
     setState(() => _isLoading = false);
 
     if (success) {
-      FeedbackHelper.mostrarSucesso(context, "Despesa registrada e dividida igualmente!");
-      // 🎯 Se a despesa for registrada com sucesso, é crucial recarregar os dados do cofre.
+      FeedbackHelper.mostrarSucesso(context, "Despesa registrada e dividida!");
       Provider.of<DetalhesCofreStore>(context, listen: false).carregarDadosCofre(widget.cofreId);
       Navigator.pop(context);
     } else {
@@ -160,7 +171,7 @@ class _RegistrarDespesaState extends State<RegistrarDespesa> {
                       Text('Registrar Nova Despesa', textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 22.0, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 30.0),
 
-                      // --- CAMPO DESCRIÇÃO ---
+                      // --- CAMPOS INPUT (DESCRIÇÃO, VALOR) ---
                       TextField(
                         controller: _descricaoController,
                         enabled: !_isLoading,
@@ -175,12 +186,10 @@ class _RegistrarDespesaState extends State<RegistrarDespesa> {
                       ),
                       const SizedBox(height: 20.0),
 
-                      // --- CAMPO VALOR ---
                       TextField(
                         controller: _valorController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         enabled: !_isLoading,
-                        // 🎯 Usando o formatador corrigido!
                         inputFormatters: [_decimalInputFormatter], 
                         decoration: InputDecoration(
                           labelText: 'Valor Total Gasto',
@@ -215,9 +224,43 @@ class _RegistrarDespesaState extends State<RegistrarDespesa> {
                             _pagadorId = newValue;
                           });
                         },
-                        // Se não houver participantes, desabilita a seleção
                         hint: _participantes.isEmpty ? const Text("Carregando participantes...") : null,
                       ),
+                      
+                      const SizedBox(height: 40.0),
+
+                      // 🎯 NOVO BLOCO: Seleção Dinâmica de Devedores
+                      Text('Dividir entre:', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                      
+                      // Usa ListView.builder dentro de um Container/SizedBox para controle de altura
+                      Container(
+                        constraints: const BoxConstraints(maxHeight: 250), // Limita a altura para scroll
+                        decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: ListView.builder(
+                          physics: const ClampingScrollPhysics(),
+                          shrinkWrap: true,
+                          itemCount: _participantes.length,
+                          itemBuilder: (context, index) {
+                            final user = _participantes[index];
+                            final bool isSelected = _membrosSelecionados[user.id!] ?? false;
+                            
+                            return CheckboxListTile(
+                              title: Text(user.nome, style: GoogleFonts.poppins(fontSize: 14)),
+                              value: isSelected,
+                              onChanged: (bool? newValue) {
+                                setState(() {
+                                  _membrosSelecionados[user.id!] = newValue ?? false;
+                                });
+                              },
+                              activeColor: const Color(0xFF1E90FF),
+                            );
+                          },
+                        ),
+                      ),
+                      
                       const SizedBox(height: 40.0),
                       
                       // --- BOTÃO DE REGISTRO ---

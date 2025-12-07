@@ -9,6 +9,7 @@ import 'package:travelbox/models/usuario.dart';
 import 'package:travelbox/models/convite.dart';
 import 'package:travelbox/models/despesa.dart';
 import 'package:travelbox/models/statusConvite.dart';
+import 'package:travelbox/models/acerto.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -319,4 +320,25 @@ class FirestoreService {
 
   }
 
+  // -----------------------------------------------------------------
+  // OPERAÇÕES DE ACERTOS (LIQUIDAÇÃO DE DÍVIDAS)
+  // -----------------------------------------------------------------
+
+  /// Registra um novo acerto de contas no Firestore.
+  Future<void> criarAcerto(Acerto novoAcerto) async {
+    final acertoCollection = _db.collection('acertos');
+    await acertoCollection.add(novoAcerto.toMap());
+  }
+
+  /// Busca todos os acertos de contas para um cofre específico.
+  Future<List<Acerto>> getAcertos(String idCofre) async {
+    final snapshot = await _db
+        .collection('acertos')
+        .where('idCofre', isEqualTo: idCofre)
+        .orderBy('data', descending: true)
+        .get();
+
+    return snapshot.docs.map((doc) => Acerto.fromFirestore(doc)).toList();
+  }
 }
+
