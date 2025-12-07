@@ -1,12 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../stores/authStore.dart';
-import 'login.dart'; 
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+
+// Stores e Models
+import 'package:travelbox/stores/authStore.dart';
+import 'package:travelbox/stores/PerfilStore.dart';
+import 'package:travelbox/models/usuario.dart';
+
+
+// Views e Utils
+import 'package:travelbox/views/login.dart';
 import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
 import 'package:travelbox/views/premium.dart';
-import 'package:travelbox/views/home.dart'; 
+import 'package:travelbox/views/home.dart';
+import 'package:travelbox/utils/feedbackHelper.dart';
 
 class Account extends StatefulWidget {
   const Account({super.key});
@@ -25,6 +35,30 @@ class _AccountState extends State<Account> {
   // NOVO ESTADO: Controla se a edição está ativa
   bool _isEditing = false; 
 
+  final _phoneMask = MaskTextInputFormatter(
+    mask: '(##) #####-####', 
+    filter: {"#": RegExp(r'[0-9]')},
+    type: MaskAutoCompletionType.lazy,
+  );
+
+  final _cpfMask = MaskTextInputFormatter(
+    mask: '###.###.###-##', 
+    filter: {"#": RegExp(r'[0-9]')},
+    type: MaskAutoCompletionType.lazy,
+  );
+
+  @override
+  void initState(){
+    super.initState();
+    final user = context.read<AuthStore>().usuario;
+    if(user != null) {
+      _nomeController.text = user.nome;
+      _cpfController.text = user.cpf;
+      _emailController.text = user.email;
+      _telefoneController.text = user.telefone ?? '';
+    }
+  }
+
   @override
   void dispose() {
     _nomeController.dispose();
@@ -34,30 +68,50 @@ class _AccountState extends State<Account> {
     super.dispose();
   }
 
-  // --- Funções de Ação ---
-  void _handleSave(AuthStore authStore) {
+  // --- logica de salvar ---
+  void _handleSave() async {
     if (!_isEditing) {
-      // Se não estiver editando, entra no modo de edição
-      setState(() {
-        _isEditing = true;
-      });
+      setState(() => _isEditing = true);
       return;
     }
     
-    // Se estiver editando, SALVA (Lógica de Backend)
-    // Todo: Chamar o método de atualização do Firestore aqui, usando os controllers
-    
-    setState(() {
-      _isEditing = false; // Sai do modo de edição após salvar
-    });
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Dados prontos para salvar.')),
+    FocusScope.of(context).unfocus();
+
+    final perfilStore = context.read<PerfilStore>();
+    final authStore = context.read<AuthStore>();
+    final currentUser = authStore.usuario;
+
+    if (currentUser == null) return;
+
+    // 2. Cria o objeto atualizado (Mantém ID e Email, atualiza o resto)
+    Usuario usuarioAtualizado = currentUser.copyWith(
+      nome: _nomeController.text.trim(),
+      cpf: _cpfController.text.trim(),
+      telefone: _telefoneController.text.trim(),
     );
+    
+    bool sucesso = await perfilStore.atualizarPerfil(usuarioAtualizado);
+
+    if (!mounted) return;
+
+    if (sucesso) {
+      // 4. Importante: Atualiza o cache local do AuthStore
+      await authStore.recarregarUsuario();
+      
+      setState(() => _isEditing = false);
+      FeedbackHelper.mostrarSucesso(context, "Perfil atualizado com sucesso!");
+    } else {
+      FeedbackHelper.mostrarErro(context, perfilStore.errorMensage);
+    }
   }
 
-  void _handleLogout(AuthStore authStore) async {
-    await authStore.signOut(); // O main.dart cuida do redirecionamento
+  void _handleLogout() async {
+    final authStore = context.read<AuthStore>();
+    await authStore.signOut();
+    // O main.dart redireciona automaticamente, mas podemos forçar navegação se necessário
+    if (mounted) {
+       Navigator.of(context).popUntil((route) => route.isFirst);
+    }
   }
 
   // --- Widgets de Visualização ---
@@ -68,84 +122,47 @@ class _AccountState extends State<Account> {
     required TextEditingController controller, 
     bool editable = true, 
     TextInputType keyboardType = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     // Determina o estado de edição
-    bool readOnly = !_isEditing || !editable;
+    bool isReadOnly = !_isEditing || !editable;
     
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: TextField(
         controller: controller,
-        readOnly: readOnly,
+        readOnly: isReadOnly,
         keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: GoogleFonts.poppins(color: readOnly ? Colors.black54 : Colors.black),
+          labelStyle: GoogleFonts.poppins(color: isReadOnly ? Colors.black54 : Colors.black),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8.0),
-            // Muda a borda se estiver editável
-            borderSide: BorderSide(color: readOnly ? Colors.grey.shade300 : const Color(0xFF1E90FF), width: 1.5),
+            borderSide: BorderSide(
+              color: isReadOnly ? Colors.grey.shade300 : const Color(0xFF1E90FF), 
+              width: 1.5
+            ),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8.0),
+            borderSide: BorderSide(
+              color: isReadOnly ? Colors.grey.shade300 : const Color(0xFF1E90FF), 
+            ),
           ),
           filled: true,
-          fillColor: readOnly ? Colors.grey[50] : Colors.white, // Cor diferente para 'read-only'
+          fillColor: isReadOnly ? Colors.grey[100] : Colors.white,
         ),
-        style: GoogleFonts.poppins(color: Colors.black),
+        style: GoogleFonts.poppins(color: Colors.black87),
       ),
     );
   }
 
-  // Widget para a tela de Acesso Rápido/Deslogado (Mantido)
-  Widget _buildLoggedOutView(BuildContext context) {
-    // ... (Mantido o código de LoggedOutView) ...
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Acesse sua conta para gerenciar seu perfil e cofres.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(fontSize: 16, color: Colors.black54),
-            ),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const Login()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1E90FF),
-                padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 30),
-              ),
-              child: Text(
-                'Entrar / Cadastrar',
-                style: GoogleFonts.poppins(fontSize: 18, color: Colors.white),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  
 
   // Widget para a tela de Perfil Logado (Refatorado)
-  Widget _buildLoggedInView(BuildContext context, AuthStore authStore) {
-    // Carrega dados iniciais do Store para os Controladores (se ainda não carregou)
-    final usuario = authStore.usuario;
-    if (_nomeController.text.isEmpty && usuario != null) {
-  
-  // CORREÇÃO: Removemos o operador ?? '' onde a propriedade é String (não nula)
-      _nomeController.text = usuario.nome;       
-      _cpfController.text = usuario.cpf;         
-      _emailController.text = usuario.email;     
-  
-  // MANTEMOS ?? '' APENAS ONDE A PROPRIEDADE É String? (Anulável)
-      _telefoneController.text = usuario.telefone ?? ''; 
-    }
-
+  Widget _buildLoggedInView(BuildContext context, bool isLoading) {
+    
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -166,74 +183,74 @@ class _AccountState extends State<Account> {
 
             // CAMPOS DE PERFIL (usando o novo componente)
             _buildProfileField(label: 'Nome', controller: _nomeController),
-            _buildProfileField(label: 'CPF', controller: _cpfController, keyboardType: TextInputType.number),
-            _buildProfileField(label: 'Email', controller: _emailController, editable: false, keyboardType: TextInputType.emailAddress),
-            _buildProfileField(label: 'Telefone', controller: _telefoneController, keyboardType: TextInputType.phone),
+            _buildProfileField(label: 'CPF', controller: _cpfController, keyboardType: TextInputType.number, inputFormatters: [_cpfMask]),
+            
+            _buildProfileField(label: 'Email', controller: _emailController, editable: false),
+            _buildProfileField(label: 'Telefone',controller: _telefoneController, keyboardType: TextInputType.phone, inputFormatters: [_phoneMask], // Aplica máscara
+            ),
             
             const SizedBox(height: 30.0), 
 
             // 1. Botão Salvar/Editar
             ElevatedButton(
-              onPressed: () => _handleSave(authStore), // LÓGICA DE MUDANÇA DE MODO
+              onPressed: isLoading ? null : _handleSave,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _isEditing ? const Color.fromARGB(255, 0, 218, 11) : const Color(0xFF1E90FF),
+                backgroundColor: _isEditing ? Colors.green : const Color(0xFF1E90FF),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
               ),
-              child: Text(
-                _isEditing ? 'Salvar Alterações' : 'Editar Perfil', // TEXTO DINÂMICO
-                style: GoogleFonts.poppins(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
+              child: isLoading 
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white))
+                : Text(
+                    _isEditing ? 'Salvar Alterações' : 'Editar Perfil',
+                    style: GoogleFonts.poppins(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
             ),
 
-            const SizedBox(height: 50.0),
+            const SizedBox(height: 30.0),
+            const Divider(),
+            const SizedBox(height: 10.0),
 
             // 2. Botão Seja Pro
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: () {
                 Navigator.push(context, MaterialPageRoute(builder: (context) => const Pro()));
               },
+              icon: const Icon(Icons.star, color: Colors.white),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromARGB(255, 255, 187, 0),
+                backgroundColor: Colors.amber[700],
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                padding: const EdgeInsets.symmetric(vertical: 14.0),
               ),
-              child: Text(
-                'Seja Pro',
-                style: GoogleFonts.poppins(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
+              label: Text('Seja Pro', style: GoogleFonts.poppins(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.white)),
             ),
 
-            // 3. Meus Cofres
-            const SizedBox(height: 16.0),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const Home())); 
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1E90FF),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-              ),
-              child: Text(
-                'Meus Cofres',
-                style: GoogleFonts.poppins(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-            ),
+            // // 3. Meus Cofres
+            // const SizedBox(height: 16.0),
+            // ElevatedButton(
+            //   onPressed: () {
+            //     Navigator.push(context, MaterialPageRoute(builder: (context) => const Home())); 
+            //   },
+            //   style: ElevatedButton.styleFrom(
+            //     backgroundColor: const Color(0xFF1E90FF),
+            //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+            //     padding: const EdgeInsets.symmetric(vertical: 16.0),
+            //   ),
+            //   child: Text(
+            //     'Meus Cofres',
+            //     style: GoogleFonts.poppins(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.white),
+            //   ),
+            // ),
 
-            // 4. Sair da Conta
-            const SizedBox(height: 16.0),
-            ElevatedButton(
-              onPressed: () => _handleLogout(authStore), // CHAMA A LÓGICA DE LOGOUT
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromARGB(255, 255, 0, 0),
+            // Botão Sair
+            OutlinedButton(
+              onPressed: _handleLogout,
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.red),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                padding: const EdgeInsets.symmetric(vertical: 14.0),
               ),
-              child: Text(
-                'Sair da Conta',
-                style: GoogleFonts.poppins(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
+              child: Text('Sair da Conta', style: GoogleFonts.poppins(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.red)),
             ),
             const SizedBox(height: 50.0),
           ],
@@ -242,39 +259,65 @@ class _AccountState extends State<Account> {
     );
   }
 
+
+
+// --- View Deslogado ---
+  Widget _buildLoggedOutView(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.lock_outline, size: 60, color: Colors.grey),
+            const SizedBox(height: 20),
+            Text(
+              'Acesse sua conta.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(fontSize: 16, color: Colors.black54),
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const Login()));
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E90FF), padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 30)),
+              child: Text('Entrar', style: GoogleFonts.poppins(fontSize: 18, color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+
   @override
   Widget build(BuildContext context) {
-    // 1. OBTÉM O AUTHSTORE
-    return Consumer<AuthStore>(
-      builder: (context, authStore, child) {
-        final isLoggedIn = authStore.isLoggedIn;
+    // Escuta os dois stores
+    final authStore = context.watch<AuthStore>();
+    final perfilStore = context.watch<PerfilStore>(); // Para saber o loading do salvamento
 
-        return Scaffold(
-          backgroundColor: const Color(0xFF1E90FF),
-          body: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Header(),
-              Expanded(
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(50),
-                      topRight: Radius.circular(50),
-                    ),
-                  ),
-                  // 2. CONDIÇÃO: Mostra a UI de Login ou a UI de Perfil
-                  child: isLoggedIn
-                      ? _buildLoggedInView(context, authStore)
-                      : _buildLoggedOutView(context),
-                ),
+    return Scaffold(
+      backgroundColor: const Color(0xFF1E90FF),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Header(),
+          Expanded(
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(topLeft: Radius.circular(50), topRight: Radius.circular(50)),
               ),
-              const Footbarr(),
-            ],
+              child: authStore.isLoggedIn
+                  ? _buildLoggedInView(context, perfilStore.isloading)
+                  : _buildLoggedOutView(context),
+            ),
           ),
-        );
-      },
+          const Footbarr(),
+        ],
+      ),
     );
   }
 }

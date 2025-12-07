@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:travelbox/models/Usuario.dart';
+import 'package:travelbox/models/usuario.dart';
 import 'package:travelbox/services/AuthService.dart';
 import 'package:travelbox/services/FirestoreService.dart';
 
-class PerfilProvider extends ChangeNotifier {
+class PerfilStore extends ChangeNotifier {
   final FirestoreService _firestoreService;
   final AuthService _authService;
 
@@ -11,7 +11,7 @@ class PerfilProvider extends ChangeNotifier {
   String? _errorMensage;
   String? _successMensage;
 
-  PerfilProvider(this._firestoreService, this._authService);
+  PerfilStore(this._firestoreService, this._authService);
 
   bool get isloading => _isloading;
   String? get errorMensage => _errorMensage;

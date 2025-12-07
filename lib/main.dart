@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:travelbox/stores/ConviteStore.dart';
-import 'package:travelbox/stores/PerfilProvider.dart';
+import 'package:travelbox/stores/PerfilStore.dart';
 import 'package:travelbox/stores/cofreStore.dart';
 import 'package:travelbox/stores/detalhesCofreStore.dart';
 import 'package:travelbox/views/home.dart';
@@ -58,8 +58,8 @@ class MyApp extends StatelessWidget {
           ),
         ),
 
-        ChangeNotifierProvider<PerfilProvider>(
-          create: (context) => PerfilProvider(
+        ChangeNotifierProvider<PerfilStore>(
+          create: (context) => PerfilStore(
             context.read<FirestoreService>(),
             context.read<AuthService>(),
           ),
