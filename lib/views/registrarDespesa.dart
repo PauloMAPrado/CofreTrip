@@ -29,7 +29,7 @@ class RegistrarDespesa extends StatefulWidget {
 
 class _RegistrarDespesaState extends State<RegistrarDespesa> {
   final _descricaoController = TextEditingController();
-  final _valorController = TextEditingController();
+  final _valorController = TextEditingController(text: "R\$0,00");
   
   List<Usuario> _participantes = [];
   String? _pagadorId;
