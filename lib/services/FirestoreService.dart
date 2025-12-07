@@ -7,6 +7,7 @@ import 'package:travelbox/models/nivelPermissao.dart';
 import 'package:travelbox/models/permissao.dart';
 import 'package:travelbox/models/usuario.dart';
 import 'package:travelbox/models/convite.dart';
+import 'package:travelbox/models/despesa.dart';
 import 'package:travelbox/models/statusConvite.dart';
 
 class FirestoreService {
@@ -255,8 +256,38 @@ class FirestoreService {
   Future<void> responderConvite(String conviteId, StatusConvite novoStatus) async {
     await _db.collection('convites').doc(conviteId).update({
       'status': novoStatus.name,
-    }
+      }
     );
-//====================== Membros e Convites implementado ===================
   }
+//====================== Membros e Convites implementado ===================
+
+  // ========================== MÉTODOS DE DESPESAS ========================================
+  /// 🎯 Cria uma nova despesa como subcoleção de 'cofres'.
+  Future<void> criarDespesa(Despesa despesa) async {
+    await _db
+        .collection('cofres')
+        .doc(despesa.idCofre)
+        .collection('despesas') // Subcoleção
+        .add(despesa.toMap());
+  }
+
+  /// Busca todas as despesas de um cofre específico.
+  Future<List<Despesa>> getDespesas(String idCofre) async {
+    try {
+      final snapshot = await _db
+          .collection('cofres')
+          .doc(idCofre)
+          .collection('despesas')
+          .orderBy('data', descending: true)
+          .get();
+
+      // Mapeia os documentos para o modelo Despesa
+      return snapshot.docs.map((doc) => Despesa.fromMap(doc.data(), doc.id)).toList();
+    } catch (e) {
+      print("Erro ao buscar despesas: $e");
+      return [];
+    }
+
+  }
+
 }
