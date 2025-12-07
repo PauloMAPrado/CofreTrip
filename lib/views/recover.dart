@@ -88,7 +88,9 @@ class _RecoverState extends State<Recover> {
 
                             // Verificamos o resultado
                             if (store.actionStatus == ActionStatus.success) {
-                                FeedbackHelper.mostrarSucesso(context, 'Link enviado! Verifique seu email.');
+                                FeedbackHelper.mostrarSucesso(context, 
+                                    'Se o e-mail estiver cadastrado, você receberá um link em instantes.'
+                                );
                                 Navigator.pop(context);
                             } else {
                                 FeedbackHelper.mostrarErro(context, store.errorMessage);
