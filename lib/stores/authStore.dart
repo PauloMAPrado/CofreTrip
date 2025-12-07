@@ -173,6 +173,8 @@ class AuthStore extends ChangeNotifier {
     await _authService.signOut();
   }
 
+
+
   Future<void> recoverPassword({required String email}) async {
     _actionStatus = ActionStatus.loading;
     notifyListeners();
