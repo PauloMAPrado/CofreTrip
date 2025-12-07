@@ -16,10 +16,6 @@ import 'package:travelbox/views/saldos.dart';
 // Imports Store
 import 'package:travelbox/stores/detalhesCofreStore.dart';
 
-// Import models
-import 'package:travelbox/models/cofre.dart';
-
-
 
 class CofreScreen extends StatefulWidget {
   // Mantenha como StatefulWidget para initState

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart'; 
-import 'package:mask_text_input_formatter/mask_text_input_formatter.dart'; 
+import 'package:travelbox/utils/currency_input_formatter.dart'; 
 
 import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
@@ -20,12 +21,11 @@ class Contribuicao extends StatefulWidget {
 }
 
 class _ContribuicaoState extends State<Contribuicao> {
-  final TextEditingController _valorController = TextEditingController();
+  final TextEditingController _valorController = TextEditingController(text: "R\$ 0,00");
   final TextEditingController _dataController = TextEditingController();
   String? _formaPagamentoSelecionada; 
   
   final DateFormat _dateFormat = DateFormat('yyyy-MM-dd');
-  final _currencyMask = MaskTextInputFormatter(mask: '##.###.###,00', filter: {"#": RegExp(r'[0-9]')}, type: MaskAutoCompletionType.lazy);
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -114,9 +114,19 @@ class _ContribuicaoState extends State<Contribuicao> {
                       TextField(
                         controller: _valorController,
                         enabled: !isLoading,
-                        decoration: InputDecoration(labelText: 'Valor', prefixText: 'R\$ ', border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0))),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        inputFormatters: [_currencyMask],
+                        keyboardType: TextInputType.number, // Teclado numérico simples
+                        
+                        // USA O NOVO FORMATADOR
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          CurrencyInputFormatter(),
+                        ],
+                        
+                        decoration: InputDecoration(
+                          labelText: 'Valor', 
+                          // Removemos prefixText 'R$' pois já está no texto
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0))
+                        ),
                       ),
                       const SizedBox(height: 20.0),
                       

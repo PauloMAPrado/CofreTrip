@@ -1,8 +1,8 @@
 // Imports essenciais
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:mask_text_input_formatter/mask_text_input_formatter.dart'; 
 import 'package:provider/provider.dart';
 
 
@@ -16,6 +16,7 @@ import 'package:travelbox/stores/authStore.dart';
 
 // Import do utils
 import 'package:travelbox/utils/feedbackHelper.dart';
+import 'package:travelbox/utils/currency_input_formatter.dart';
 
 
 
@@ -30,16 +31,10 @@ class _CriacofreState extends State<Criacofre> {
   // --- Controladores (Estado local da UI) ---
   final _nomeController = TextEditingController();
   final _dataInicioController = TextEditingController();
-  final _valorAlvoController = TextEditingController();
+  final _valorAlvoController = TextEditingController(text: "R\$ 0,00");
   
   // --- Formatadores ---
   final DateFormat _dateFormat = DateFormat('yyyy-MM-dd');
-
-  final _currencyMask = MaskTextInputFormatter(
-    mask: '##.###.###,00', 
-    filter: {"#": RegExp(r'[0-9]')},
-    type: MaskAutoCompletionType.lazy,
-  );
 
   // --- Seletor de Data ---
   Future<void> _selectDate(BuildContext context) async {
@@ -143,16 +138,24 @@ class _CriacofreState extends State<Criacofre> {
                       // VALOR
                       TextField(
                         controller: _valorAlvoController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        // Mudei para number (sem decimal) porque tratamos como inteiros internamente
+                        keyboardType: TextInputType.number, 
                         enabled: !isLoading,
-                        inputFormatters: [_currencyMask],
+                        
+                        // USA O NOVO FORMATADOR MÁGICO
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly, // Aceita só números
+                          CurrencyInputFormatter(), // Formata como banco
+                        ],
+                        
                         decoration: InputDecoration(
                           labelText: 'Valor Alvo',
+                          // Removemos o prefixText: 'R$ ' porque o formatador já coloca o R$ dentro do texto
                           prefixIcon: const Icon(Icons.attach_money, color: Color(0xFF1E90FF)),
                           labelStyle: GoogleFonts.poppins(),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: Colors.grey[50],
                         ),
                         style: GoogleFonts.poppins(),
                       ),
