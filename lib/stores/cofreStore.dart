@@ -153,6 +153,8 @@ class CofreStore extends ChangeNotifier {
 
   void limparDados() {
     _cofres = [];
+    _isLoading = false;
+    _errorMessage = null;
     notifyListeners();
   }
 }

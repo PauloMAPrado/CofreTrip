@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:travelbox/models/cofre.dart';
 import 'package:travelbox/models/contribuicao.dart';
 import 'package:travelbox/models/permissao.dart';
-import 'package:travelbox/models/Usuario.dart';
+import 'package:travelbox/models/usuario.dart';
 import 'package:travelbox/services/FirestoreService.dart';
 
 class DetalhesCofreStore extends ChangeNotifier {
@@ -133,4 +133,15 @@ class DetalhesCofreStore extends ChangeNotifier {
       return false;
     }
   }
+
+  void limparDados() {
+    _cofreAtivo = null;
+    _contribuicoes = [];
+    _membros = [];
+    _contribuidoresMap = {};
+    _isLoading = false;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:travelbox/stores/ConviteStore.dart';
-import 'package:travelbox/stores/PerfilProvider.dart';
+import 'package:travelbox/stores/PerfilStore.dart';
 import 'package:travelbox/stores/cofreStore.dart';
 import 'package:travelbox/stores/detalhesCofreStore.dart';
 import 'package:travelbox/views/home.dart';
@@ -58,8 +58,8 @@ class MyApp extends StatelessWidget {
           ),
         ),
 
-        ChangeNotifierProvider<PerfilProvider>(
-          create: (context) => PerfilProvider(
+        ChangeNotifierProvider<PerfilStore>(
+          create: (context) => PerfilStore(
             context.read<FirestoreService>(),
             context.read<AuthService>(),
           ),
@@ -72,8 +72,26 @@ class MyApp extends StatelessWidget {
 
       child: Consumer<AuthStore>(
         builder: (context, authStore, _) {
+
+          if (!authStore.isLoggedIn) {
+             // Usamos um microtask para não dar erro de build
+             Future.microtask(() {
+                // Verifique se seus stores têm o método limparDados(). Se não tiverem, crie!
+                // O CofreStore já tem. O ConviteStore e DetalhesCofreStore precisam ter.
+                Provider.of<CofreStore>(context, listen: false).limparDados();
+                Provider.of<ConviteStore>(context, listen: false).limparDados();
+                Provider.of<DetalhesCofreStore>(context, listen: false).limparDados();
+
+             });
+          }
+
           return MaterialApp(
             debugShowCheckedModeBanner: false,
+            title: 'CofreTrip',
+            theme: ThemeData(
+              primaryColor: const Color(0xFF1E90FF),
+              useMaterial3: true, // Modernizar o visual
+            ),
             home: _getTelaInicial(authStore.sessionStatus),
           );
         },

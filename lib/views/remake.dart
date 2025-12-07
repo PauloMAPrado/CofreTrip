@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../stores/PerfilProvider.dart'; // Seu PerfilProvider
+import '../stores/PerfilStore.dart'; // Seu PerfilProvider
 import 'package:travelbox/utils/feedbackHelper.dart';
 import 'package:travelbox/views/modules/header.dart';
 
@@ -23,7 +23,7 @@ class _RemakeState extends State<Remake> {
     super.dispose();
   }
   
-  void _handleChangePassword(PerfilProvider perfilProvider) async {
+  void _handleChangePassword(PerfilStore perfilProvider) async {
     final novaSenha = _novaSenhaController.text.trim();
     final confirmarSenha = _confirmarSenhaController.text.trim();
 
@@ -55,7 +55,7 @@ class _RemakeState extends State<Remake> {
   @override
   Widget build(BuildContext context) {
     // Lemos o PerfilProvider para controle de loading
-    final perfilProvider = context.watch<PerfilProvider>();
+    final perfilProvider = context.watch<PerfilStore>();
     final isLoading = perfilProvider.isloading;
 
     return Scaffold(

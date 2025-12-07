@@ -34,7 +34,7 @@ class ListaUser extends StatelessWidget {
                     Text('Participantes', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 20),
 
-                    /* BOTÃO CONVIDAR (Descomente quando criar a tela Convidar)
+//                    BOTÃO CONVIDAR (Descomente quando criar a tela Convidar)
                     ElevatedButton.icon(
                       onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => Convidar(cofreId: cofreId))),
                       icon: const Icon(Icons.person_add, color: Colors.white),
@@ -42,7 +42,6 @@ class ListaUser extends StatelessWidget {
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
                     ),
                     const SizedBox(height: 20),
-                    */
 
                     Expanded(
                       child: membros.isEmpty
