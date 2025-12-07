@@ -3,18 +3,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import 'package:travelbox/stores/detalhesCofreStore.dart';
 // Imports Store/Providers
-import '../stores/detalhesCofreStore.dart'; 
-import '../stores/authStore.dart';  
-import '../stores/despesaStore.dart';     
+import 'package:travelbox/stores/authStore.dart';  
+import 'package:travelbox/stores/despesaStore.dart';     
 // Imports Models
-import '../models/despesa.dart';             
-import '../models/usuario.dart';             
+import 'package:travelbox/models/despesa.dart';             
+import 'package:travelbox/models/usuario.dart';             
 // Imports Utils
-import '../utils/feedbackHelper.dart';       
-import '../utils/currency_input_formatter.dart'; // 🎯 NOVO: Seu formatador customizado
+import 'package:travelbox/utils/feedbackHelper.dart';       
+import 'package:travelbox/utils/currency_input_formatter.dart'; // 🎯 NOVO: Seu formatador customizado
 import 'modules/header.dart';
 import 'modules/footbar.dart';
 

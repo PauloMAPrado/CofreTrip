@@ -253,6 +253,23 @@ class FirestoreService {
         .get();
     return snapshot.docs.map((doc) => Permissao.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>)).toList();
   }
+
+  /// Remove a permissão de um usuário para um cofre específico.
+  /// Usado tanto para 'Sair do Grupo' quanto para 'Expulsar Membro'.
+  Future<void> removePermissao(String idUsuario, String idCofre) async {
+    // 1. Busca o documento da permissão exata
+    final snapshot = await _db
+        .collection('permissoes')
+        .where('id_usuario', isEqualTo: idUsuario) // <--- Use com underline!
+        .where('id_cofre', isEqualTo: idCofre)     // <--- Use com underline!
+        .limit(1)
+        .get();
+
+    // 2. Se encontrar, deleta o documento
+    for (var doc in snapshot.docs) {
+      await doc.reference.delete();
+    }
+  }
   
   // ========================== MÉTODOS DE CONVITES ========================================
 
