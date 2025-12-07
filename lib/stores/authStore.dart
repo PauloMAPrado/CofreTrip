@@ -37,30 +37,68 @@ class AuthStore extends ChangeNotifier {
     );
   }
 
+  // Future<void> _onAuthStateChanged(User? firebaseUser) async {
+  //   if (firebaseUser == null) {
+  //     _sessionStatus = SessionStatus.unauthenticated;
+  //     _firebaseUser = null;
+  //     _usuario = null;
+  //   } else {
+
+  //     _firebaseUser = firebaseUser;
+
+  //      try{
+  //       _usuario = await _firestoreService.getUsuario(firebaseUser.uid);
+
+  //       if(_usuario != null) {
+  //         _sessionStatus = SessionStatus.authenticated;
+  //       } else {
+  //         _sessionStatus = SessionStatus.unauthenticated;
+  //       }
+  //      } catch (e) {
+  //       print("Erro Crítico ao buscar o usuário: $e");
+  //       _sessionStatus = SessionStatus.unauthenticated;
+  //      }
+  //   }
+  //   notifyListeners();
+  // }
+
+//===========================    TESTE   ==================================================
+
+// Monitora mudanças na autenticação (Login/Logout)
   Future<void> _onAuthStateChanged(User? firebaseUser) async {
     if (firebaseUser == null) {
+      print("🔒 AuthStore: Usuário deslogado (NULL)");
       _sessionStatus = SessionStatus.unauthenticated;
       _firebaseUser = null;
       _usuario = null;
     } else {
-
+      print("🔑 AuthStore: Usuário detectado no Firebase (${firebaseUser.uid}). Buscando perfil...");
+      
       _firebaseUser = firebaseUser;
 
-       try{
+       try {
         _usuario = await _firestoreService.getUsuario(firebaseUser.uid);
 
         if(_usuario != null) {
+          print("✅ AuthStore: Perfil encontrado! Entrando na Home.");
           _sessionStatus = SessionStatus.authenticated;
         } else {
-          _sessionStatus = SessionStatus.unauthenticated;
+          print("⚠️ AuthStore: Usuário autenticado, mas SEM PERFIL no Firestore.");
+          // Se não tem perfil, não podemos deixar entrar na Home, senão quebra.
+          // O ideal aqui seria jogar para uma tela de "Completar Cadastro",
+          // mas por segurança, mantemos deslogado ou forçamos logout.
+          _sessionStatus = SessionStatus.unauthenticated; 
         }
        } catch (e) {
-        print("Erro Crítico ao buscar o usuário: $e");
+        print("🔥 AuthStore: Erro Crítico ao buscar o usuário: $e");
         _sessionStatus = SessionStatus.unauthenticated;
        }
     }
     notifyListeners();
   }
+
+//===========================    TESTE   ==================================================
+
 
   void resetActionStatus() {
     _actionStatus = ActionStatus.initial;

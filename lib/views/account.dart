@@ -106,12 +106,14 @@ class _AccountState extends State<Account> {
   }
 
   void _handleLogout() async {
+    // Buscamos o store aqui dentro
     final authStore = context.read<AuthStore>();
+    
+    // 1. Fecha todas as telas e volta para a raiz (Login)
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    
+    // 2. Faz o logout no Firebase
     await authStore.signOut();
-    // O main.dart redireciona automaticamente, mas podemos forçar navegação se necessário
-    if (mounted) {
-       Navigator.of(context).popUntil((route) => route.isFirst);
-    }
   }
 
   // --- Widgets de Visualização ---

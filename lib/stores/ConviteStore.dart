@@ -117,4 +117,12 @@ class ConviteStore extends ChangeNotifier {
     _isLoading = false;
     notifyListeners();
   }
+
+  void limparDados(){
+    _convitesRecebidos = [];
+    _isLoading = false;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
 }
