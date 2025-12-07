@@ -290,6 +290,7 @@ class _CofreScreenState extends State<CofreScreen> {
                           ),
                         ),
                       ),
+                       const SizedBox(height: 20.0),
 
                       ElevatedButton(
                         onPressed: () {
@@ -368,9 +369,8 @@ class _CofreScreenState extends State<CofreScreen> {
                       // ## Botão de Saldos e Acertos (Splitwise)
                       ElevatedButton(
                         onPressed: () {
-                          // ⚠️ Assumindo a criação da tela Saldos.dart
                           // (Esta tela mostrará quem deve a quem e quanto)
-                          // Navigator.push(context, MaterialPageRoute(builder: (context) => Saldos(cofreId: widget.cofreId)));
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => Saldos(cofreId: widget.cofreId)));
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors
