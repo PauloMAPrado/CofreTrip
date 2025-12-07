@@ -15,7 +15,6 @@ import 'package:travelbox/views/login.dart';
 import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
 import 'package:travelbox/views/premium.dart';
-import 'package:travelbox/views/home.dart';
 import 'package:travelbox/utils/feedbackHelper.dart';
 
 class Account extends StatefulWidget {
@@ -115,6 +114,71 @@ class _AccountState extends State<Account> {
     // 2. Faz o logout no Firebase
     await authStore.signOut();
   }
+
+  void _confirmarExclusao() {
+    final passwordController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text("Excluir Conta", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.red)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "Esta ação é irreversível. Para continuar, digite sua senha atual:",
+              style: GoogleFonts.poppins(fontSize: 14),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Senha',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.lock_outline),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx), // Cancelar
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              // Fecha o diálogo primeiro
+              Navigator.pop(ctx);
+              
+              final senha = passwordController.text;
+              if (senha.isEmpty) return;
+
+              final authStore = context.read<AuthStore>();
+              
+              // Chama a exclusão
+              bool sucesso = await authStore.excluirConta(senha);
+
+              if (mounted) {
+                if (sucesso) {
+                  // O main.dart vai jogar para o Login sozinho, mas limpamos a pilha
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  FeedbackHelper.mostrarSucesso(context, "Conta excluída com sucesso.");
+                } else {
+                  FeedbackHelper.mostrarErro(context, authStore.errorMessage);
+                }
+              }
+            },
+            child: const Text("EXCLUIR TUDO", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  
 
   // --- Widgets de Visualização ---
 
@@ -257,7 +321,21 @@ class _AccountState extends State<Account> {
               ),
               child: Text('Sair da Conta', style: GoogleFonts.poppins(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.red)),
             ),
+
+            const SizedBox(height: 16.0),
+
+            // Botão PERIGO (Excluir)
+            TextButton.icon(
+              onPressed: _confirmarExclusao,
+              icon: const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 18),
+              label: Text(
+                'Excluir minha conta permanentemente', 
+                style: GoogleFonts.poppins(fontSize: 12.0, color: Colors.redAccent, fontWeight: FontWeight.w600)
+              ),
+            ),
+            
             const SizedBox(height: 50.0),
+
           ],
         ),
       ),

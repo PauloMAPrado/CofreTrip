@@ -90,4 +90,27 @@ class AuthService {
       return e.toString();
     }
   }
+
+  /// Reautentica o usuário para permitir ações sensíveis (como deletar conta)
+  Future<void> reauthenticate(String password) async {
+    User? user = _auth.currentUser;
+    if (user != null && user.email != null) {
+      // Cria a credencial com o email atual e a senha digitada
+      AuthCredential credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: password,
+      );
+      // Tenta reautenticar
+      await user.reauthenticateWithCredential(credential);
+    } else {
+      throw Exception("Usuário não identificado.");
+    }
+  }
+
+  /// Deleta a conta de autenticação (Login)
+  Future<void> deleteAuth() async {
+    await _auth.currentUser?.delete();
+  }
+
+
 }

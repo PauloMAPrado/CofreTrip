@@ -65,6 +65,13 @@ class FirestoreService {
     });
   }
 
+  /// Deleta o documento do perfil do usuário
+  Future<void> deleteUserData(String uid) async {
+    await _db.collection('users').doc(uid).delete();
+    // Nota: Por enquanto mantemos os cofres/contribuições para não quebrar 
+    // os grupos dos amigos, mas o perfil pessoal some.
+  }
+
   // ========================== MÉTODOS DE COFRE ========================================
 
   /// Cria um novo cofre E JÁ ADICIONA O CRIADOR COMO ADMIN
