@@ -15,6 +15,7 @@ import 'package:travelbox/views/login.dart';
 import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/views/modules/header.dart';
 import 'package:travelbox/views/premium.dart';
+import 'package:travelbox/views/home.dart';
 import 'package:travelbox/utils/feedbackHelper.dart';
 
 class Account extends StatefulWidget {
