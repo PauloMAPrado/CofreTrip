@@ -145,6 +145,49 @@ class DetalhesCofreStore extends ChangeNotifier {
     }
   }
 
+  Future<bool> expulsarMembro(String idUsuarioAlvo, String idCofre) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // Chama o serviço para deletar a permissão do banco
+      await _firestoreService.removePermissao(idUsuarioAlvo, idCofre);
+      
+      // Remove localmente da lista para atualizar a tela na hora
+      _membros.removeWhere((m) => m.idUsuario == idUsuarioAlvo);
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = "Erro ao expulsar: $e";
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // AÇÃO: Sair do Cofre (Apenas Contribuinte)
+  Future<bool> sairDoCofre(String meuId, String idCofre) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _firestoreService.removePermissao(meuId, idCofre);
+      
+      // Não precisamos atualizar a lista local, pois vamos fechar a tela
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = "Erro ao sair: $e";
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   void limparDados() {
     _cofreAtivo = null;
     _contribuicoes = [];

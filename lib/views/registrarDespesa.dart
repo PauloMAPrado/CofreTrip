@@ -8,8 +8,8 @@ import 'package:travelbox/stores/detalhesCofreStore.dart';
 import '../stores/authStore.dart';  
 import '../stores/despesaStore.dart';     
 // Imports Models
-import '../models/despesa.dart';             
-import '../models/usuario.dart';             
+import 'package:travelbox/models/despesa.dart';             
+import 'package:travelbox/models/usuario.dart';             
 // Imports Utils
 import '../utils/feedbackHelper.dart';       
 import '../utils/currency_input_formatter.dart'; 
