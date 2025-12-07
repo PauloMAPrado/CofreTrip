@@ -3,10 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:travelbox/views/modules/header.dart';
 import 'package:travelbox/views/modules/footbar.dart';
-import '../stores/detalhesCofreStore.dart'; 
-import '../models/usuario.dart'; 
-import '../models/permissao.dart'; 
-import 'package:travelbox/views/convidar.dart'; // <--- Descomente quando criar a tela
+import 'package:travelbox/stores/detalhesCofreStore.dart'; 
+import 'package:travelbox/views/convidar.dart';
 
 class ListaUser extends StatelessWidget {
   final String cofreId;

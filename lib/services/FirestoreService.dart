@@ -65,6 +65,28 @@ class FirestoreService {
     });
   }
 
+  /// Busca usuários cujo nome começa com o termo digitado.
+  /// Retorna uma lista de sugestões.
+  Future<List<Usuario>> pesquisarUsuariosPorNome(String termo) async {
+    if (termo.isEmpty) return [];
+
+    // O truque do Firestore para "começa com":
+    // Busca de 'João' até 'João' + caractere final unicode (\uf8ff)
+    final snapshot = await _db
+        .collection('users')
+        .orderBy('nome') // Precisa ordenar por nome para funcionar
+        .startAt([termo])
+        .endAt([termo + '\uf8ff'])
+        .limit(10) // Limita a 10 resultados para não pesar
+        .get();
+
+    return snapshot.docs
+        .map((doc) => Usuario.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
+        .toList();
+  }
+
+
+
   /// Deleta o documento do perfil do usuário
   Future<void> deleteUserData(String uid) async {
     await _db.collection('users').doc(uid).delete();

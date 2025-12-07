@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:travelbox/models/convite.dart';
 import 'package:travelbox/models/permissao.dart';
@@ -13,6 +15,7 @@ class ConviteStore extends ChangeNotifier {
   String? _errorMessage; 
   List<Convite> _convitesRecebidos = [];
   ConviteStore(this._firestoreService);
+  List<Usuario> _usuariosEncontrados = [];
   
   
   
@@ -20,6 +23,40 @@ class ConviteStore extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage; 
   List<Convite> get convitesRecebidos => _convitesRecebidos;
+  List<Usuario> get usuariosEncontrados => _usuariosEncontrados;
+
+  Timer? _debounce;
+
+
+  void buscarUsuarios(String termo) {
+    // 1. Cancela o timer anterior se o usuário ainda estiver digitando
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+    // 2. Cria um novo timer de 500ms (meio segundo)
+    _debounce = Timer(const Duration(milliseconds: 500), () async {
+      if (termo.isEmpty) {
+        _usuariosEncontrados = [];
+        notifyListeners();
+        return;
+      }
+
+      _isLoading = true;
+      notifyListeners();
+
+      try {
+        // Chama o serviço
+        _usuariosEncontrados = await _firestoreService.pesquisarUsuariosPorNome(termo);
+      } catch (e) {
+        print("Erro na busca: $e");
+        _usuariosEncontrados = [];
+      } finally {
+        _isLoading = false;
+        notifyListeners();
+      }
+    });
+  }
+
+
 
 
   /// Carrega os convites pendentes do usuário
@@ -118,8 +155,14 @@ class ConviteStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  void limparBusca() {
+    _usuariosEncontrados = [];
+    notifyListeners();
+  }
+
   void limparDados(){
     _convitesRecebidos = [];
+    _usuariosEncontrados = [];
     _isLoading = false;
     _errorMessage = null;
     notifyListeners();
