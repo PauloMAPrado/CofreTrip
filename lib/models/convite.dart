@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:travelbox/models/statusConvite.dart';
+import 'package:travelbox/models/enums/statusConvite.dart';
 
 class Convite {
   final String? id;

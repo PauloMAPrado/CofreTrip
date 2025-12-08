@@ -3,12 +3,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:travelbox/models/cofre.dart';
 import 'package:travelbox/models/contribuicao.dart';
-import 'package:travelbox/models/nivelPermissao.dart';
+import 'package:travelbox/models/enums/nivelPermissao.dart';
 import 'package:travelbox/models/permissao.dart';
 import 'package:travelbox/models/usuario.dart';
 import 'package:travelbox/models/convite.dart';
 import 'package:travelbox/models/despesa.dart';
-import 'package:travelbox/models/statusConvite.dart';
+import 'package:travelbox/models/enums/statusConvite.dart';
 import 'package:travelbox/models/acerto.dart';
 
 class FirestoreService {
@@ -208,6 +208,14 @@ class FirestoreService {
     }
   }
 
+  Future<void> atualizarMetaCofre(String cofreId, int novaMeta) async {
+    await _db.collection('cofres').doc(cofreId).update({
+      'valor_plano': novaMeta,
+    });
+  }
+
+
+
   // ========================== MÉTODOS DE CONTRIBUIÇÃO ========================================
 
   Future<void> addContribuicao(Contribuicao contribuicao) async {
@@ -309,53 +317,30 @@ class FirestoreService {
 //====================== Membros e Convites implementado ===================
 
   // ========================== MÉTODOS DE DESPESAS ========================================
-  /// 🎯 Cria uma nova despesa como subcoleção de 'cofres'.
-  Future<void> criarDespesa(Despesa despesa) async {
-    await _db
-        .collection('cofres')
-        .doc(despesa.idCofre)
-        .collection('despesas') // Subcoleção
-        .add(despesa.toMap());
+  /// Adiciona uma despesa (Planejada ou Real)
+  Future<void> addDespesa(Despesa despesa) async {
+    await _db.collection('despesas').add(despesa.toJson());
+    
+    // LÓGICA DE ATUALIZAÇÃO DA META (Só se for planejada)
+    // Se adicionamos um planejamento novo, a meta do cofre deve subir automaticamente?
+    // Por enquanto, vamos deixar o usuário atualizar a meta manualmente ou 
+    // faremos isso no Store para ter mais controle.
   }
 
-  /// Busca todas as despesas de um cofre específico.
-  Future<List<Despesa>> getDespesas(String idCofre) async {
-    try {
-      final snapshot = await _db
-          .collection('cofres')
-          .doc(idCofre)
-          .collection('despesas')
-          .orderBy('data', descending: true)
-          .get();
-
-      // Mapeia os documentos para o modelo Despesa
-      return snapshot.docs.map((doc) => Despesa.fromMap(doc.data(), doc.id)).toList();
-    } catch (e) {
-      print("Erro ao buscar despesas: $e");
-      return [];
-    }
-
-  }
-
-  // -----------------------------------------------------------------
-  // OPERAÇÕES DE ACERTOS (LIQUIDAÇÃO DE DÍVIDAS)
-  // -----------------------------------------------------------------
-
-  /// Registra um novo acerto de contas no Firestore.
-  Future<void> criarAcerto(Acerto novoAcerto) async {
-    final acertoCollection = _db.collection('acertos');
-    await acertoCollection.add(novoAcerto.toMap());
-  }
-
-  /// Busca todos os acertos de contas para um cofre específico.
-  Future<List<Acerto>> getAcertos(String idCofre) async {
+  /// Busca todas as despesas de um cofre
+  Future<List<Despesa>> getDespesasDoCofre(String cofreId) async {
     final snapshot = await _db
-        .collection('acertos')
-        .where('idCofre', isEqualTo: idCofre)
-        .orderBy('data', descending: true)
+        .collection('despesas')
+        .where('id_cofre', isEqualTo: cofreId)
         .get();
 
-    return snapshot.docs.map((doc) => Acerto.fromFirestore(doc)).toList();
+    return snapshot.docs
+        .map((doc) => Despesa.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
+        .toList();
+  }
+
+  /// Remove uma despesa
+  Future<void> deleteDespesa(String despesaId) async {
+    await _db.collection('despesas').doc(despesaId).delete();
   }
 }
-

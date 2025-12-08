@@ -1,61 +1,58 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:travelbox/models/enums/categoriaDespesa.dart';
+import 'package:travelbox/models/enums/tipoDespesa.dart';
+
+
 
 class Despesa {
   final String? id;
   final String idCofre;
-  final String descricao;
-  final double valorTotal;
-  final String idUsuarioPagador;
-  final DateTime data;
+  final String titulo;
+  final double valor;
+  final TipoDespesa tipo;
+  final CategoriaDespesa categoria;
   
-  // Lista de divisões: {idUsuario: valorDevido} para rastrear as dívidas individuais.
-  // Ex: [{'idUsuario': 10.00}, {'idOutroUsuario': 20.00}]
-  final List<Map<String, double>> divisao; 
+  // Campos para Despesa Real (Nulos se for Planejada)
+  final String? pagoPorId;    // Quem pagou
+  final DateTime? data;       // Data do gasto
 
   Despesa({
     this.id,
     required this.idCofre,
-    required this.descricao,
-    required this.valorTotal,
-    required this.idUsuarioPagador,
-    required this.data,
-    required this.divisao,
+    required this.titulo,
+    required this.valor,
+    required this.tipo,
+    required this.categoria,
+    this.pagoPorId,
+    this.data,
   });
 
-  // --- Conversão para Firestore ---
-  Map<String, dynamic> toMap() {
-    return {
-      'idCofre': idCofre,
-      'descricao': descricao,
-      'valorTotal': valorTotal,
-      'idUsuarioPagador': idUsuarioPagador,
-      'data': Timestamp.fromDate(data),
-      // Salva a lista de mapas diretamente
-      'divisao': divisao, 
-    };
+  factory Despesa.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data()!;
+    return Despesa(
+      id: doc.id,
+      idCofre: data['id_cofre'] as String,
+      titulo: data['titulo'] as String,
+      valor: (data['valor'] as num).toDouble(),
+      
+      // Converte String do banco para Enum
+      tipo: TipoDespesa.values.firstWhere((e) => e.name == data['tipo']),
+      categoria: CategoriaDespesa.values.firstWhere((e) => e.name == data['categoria']),
+      
+      pagoPorId: data['pago_por_id'] as String?,
+      data: data['data'] != null ? (data['data'] as Timestamp).toDate() : null,
+    );
   }
 
-  // --- Conversão de Firestore para Objeto ---
-  static Despesa fromMap(Map<String, dynamic> map, String id) {
-    // Tratamento robusto para o campo 'divisao'
-    List<dynamic> rawDivisao = map['divisao'] as List<dynamic>;
-    
-    // Mapeia a lista dinâmica de volta para List<Map<String, double>>
-    List<Map<String, double>> parsedDivisao = rawDivisao.map((item) {
-      // Cada item é um mapa onde o valor (devido) pode ser um 'int' ou 'double' ('num' no Dart)
-      return Map<String, double>.from(item.map((key, value) => 
-        MapEntry(key as String, (value as num).toDouble()))
-      );
-    }).toList();
-
-    return Despesa(
-      id: id,
-      idCofre: map['idCofre'] as String,
-      descricao: map['descricao'] as String,
-      valorTotal: (map['valorTotal'] as num).toDouble(),
-      idUsuarioPagador: map['idUsuarioPagador'] as String,
-      data: (map['data'] as Timestamp).toDate(),
-      divisao: parsedDivisao,
-    );
+  Map<String, dynamic> toJson() {
+    return {
+      'id_cofre': idCofre,
+      'titulo': titulo,
+      'valor': valor,
+      'tipo': tipo.name, // Salva como string "planejada" ou "real"
+      'categoria': categoria.name,
+      'pago_por_id': pagoPorId,
+      'data': data,
+    };
   }
 }
