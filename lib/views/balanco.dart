@@ -8,6 +8,7 @@ import 'package:travelbox/views/registrarGasto.dart';
 import 'package:travelbox/views/modules/header.dart';
 import 'package:travelbox/views/modules/footbar.dart';
 
+
 class BalancoScreen extends StatelessWidget {
   const BalancoScreen({super.key});
 
@@ -17,18 +18,35 @@ class BalancoScreen extends StatelessWidget {
     final despesasReais = store.despesasReais;
     final saldos = store.mapaDeSaldos;
     final mapUsuarios = store.contribuidoresMap;
+    final detalhesStore = context.watch<DetalhesCofreStore>();
+    final bool cofreFechado = detalhesStore.isCofreFinalizado;
     
     final currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+    
 
     return Scaffold(
       backgroundColor: const Color(0xFF1E90FF),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 80.0),
         child: FloatingActionButton.extended(
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistrarGasto())),
-          backgroundColor: Colors.redAccent,
+          // 🎯 CORRIGIDO: Propriedade única com lógica condicional
+          onPressed: cofreFechado 
+              ? null // Desativa o botão se o cofre estiver fechado
+              : () => Navigator.push(
+                  context, 
+                  MaterialPageRoute(builder: (_) => RegistrarGasto())
+                ),
+          
+          // Feedback visual de estado: Muda a cor se estiver fechado
+          backgroundColor: cofreFechado ? Colors.grey : Colors.redAccent,
+          
           icon: const Icon(Icons.receipt, color: Colors.white),
-          label: const Text("Novo Gasto", style: TextStyle(color: Colors.white)),
+          
+          // Feedback visual de estado: Muda o texto
+          label: Text(
+            cofreFechado ? "Cofre Fechado" : "Novo Gasto", 
+            style: const TextStyle(color: Colors.white)
+          ),
         ),
       ),
       body: Column(

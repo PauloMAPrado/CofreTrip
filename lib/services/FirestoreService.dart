@@ -9,7 +9,7 @@ import 'package:travelbox/models/usuario.dart';
 import 'package:travelbox/models/convite.dart';
 import 'package:travelbox/models/despesa.dart';
 import 'package:travelbox/models/enums/statusConvite.dart';
-import 'package:travelbox/models/acerto.dart';
+//import 'package:travelbox/models/acerto.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;

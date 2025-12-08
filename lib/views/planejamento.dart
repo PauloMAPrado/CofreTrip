@@ -8,8 +8,8 @@ import 'package:intl/intl.dart';
 // Stores e Models
 import 'package:travelbox/stores/detalhesCofreStore.dart';
 import 'package:travelbox/models/enums/categoriaDespesa.dart'; // Enum atualizado
-import 'package:travelbox/models/despesa.dart';
-import 'package:travelbox/models/enums/tipoDespesa.dart';
+//import 'package:travelbox/models/despesa.dart';
+//import 'package:travelbox/models/enums/tipoDespesa.dart';
 
 
 

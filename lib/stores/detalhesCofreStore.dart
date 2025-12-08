@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:travelbox/models/enums/categoriaDespesa.dart';
 import 'package:travelbox/services/FirestoreService.dart';
 
-
-
 //Models
 import 'package:travelbox/models/cofre.dart';
 import 'package:travelbox/models/contribuicao.dart';
@@ -14,7 +12,6 @@ import 'package:travelbox/models/despesa.dart';
 import 'package:travelbox/models/enums/tipoDespesa.dart';
 
 
-
 class DetalhesCofreStore extends ChangeNotifier {
   final FirestoreService _firestoreService;
 
@@ -22,6 +19,7 @@ class DetalhesCofreStore extends ChangeNotifier {
   Cofre? _cofreAtivo;
   bool _isLoading = false;
   String? _errorMessage;
+  // REMOVIDO: String cite_start = "Fonte:";
 
   // Listas de dados
   List<Contribuicao> _contribuicoes = [];
@@ -39,6 +37,15 @@ class DetalhesCofreStore extends ChangeNotifier {
   List<Permissao> get membros => _membros;
   List<Despesa> get despesas => _despesas;
   Map<String, Usuario> get contribuidoresMap => _contribuidoresMap;
+
+  // 🎯 NOVO: Lógica para mapeamento de nomes (adicionada)
+  /// Retorna o nome de exibição de um usuário, substituindo pelo pronome "Você" se for o usuário logado.
+  String getDisplayName(String userId, String? usuarioLogadoId) {
+    if (userId == usuarioLogadoId) {
+        return "Você";
+    }
+    return _contribuidoresMap[userId]?.nome ?? 'Usuário Desconhecido';
+  }
 
   // filtros
   List<Usuario> get participantesDoCofre {
@@ -94,6 +101,24 @@ class DetalhesCofreStore extends ChangeNotifier {
   // Arrecadado (Entradas) - Gasto (Saídas)
   double get saldoDisponivel {
     return totalArrecadado - totalGasto;
+  }
+
+  /// Retorna TRUE se a data planejada da viagem (_cofreAtivo.dataViagem) já passou.
+  /// Quando TRUE, o cofre deve bloquear novas Despesas (RegistrarGasto) e Contribuições.
+  bool get isCofreFinalizado {
+    if (_cofreAtivo == null || _cofreAtivo!.dataViagem == null) {
+      return false; 
+    }
+
+    final hoje = DateTime.now();
+    final dataViagem = _cofreAtivo!.dataViagem!;
+    
+    // Compara apenas a data (ignora a hora) para considerar o dia todo como ativo
+    final hojeSemHora = DateTime(hoje.year, hoje.month, hoje.day);
+    final dataViagemSemHora = DateTime(dataViagem.year, dataViagem.month, dataViagem.day);
+
+    // Se hoje é no dia da viagem ou depois, consideramos finalizado.
+    return hojeSemHora.isAfter(dataViagemSemHora) || hojeSemHora.isAtSameMomentAs(dataViagemSemHora);
   }
 
 
@@ -277,6 +302,7 @@ class DetalhesCofreStore extends ChangeNotifier {
   // Retorna um Mapa: { ID_USUARIO : SALDO }
   // Saldo Positivo = Tem a receber.
   // Saldo Negativo = Tem a pagar.
+  // ⚠️ NOTA: ESTE GETTER É REDUNDANTE E INCOMPLETO, O CÁLCULO CORRETO ESTÁ NO DESPESAPROVIDER.
   Map<String, double> get mapaDeSaldos {
     Map<String, double> saldos = {};
 
