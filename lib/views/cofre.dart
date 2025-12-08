@@ -1,8 +1,10 @@
-// Imports essenciais
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:travelbox/utils/currency_input_formatter.dart';
+import 'package:travelbox/views/balanco.dart';
 
 // Imports Views
 import 'package:travelbox/views/contribuicao.dart';
@@ -10,16 +12,15 @@ import 'package:travelbox/views/historicoContr.dart';
 import 'package:travelbox/views/listaUser.dart';
 import 'package:travelbox/views/modules/header.dart';
 import 'package:travelbox/views/modules/footbar.dart';
-import 'package:travelbox/views/registrarDespesa.dart';
-import 'package:travelbox/views/saldos.dart';
+import 'package:travelbox/views/planejamento.dart';
 
 // Imports Store
 import 'package:travelbox/stores/detalhesCofreStore.dart';
 
-
 class CofreScreen extends StatefulWidget {
-  // Mantenha como StatefulWidget para initState
   final String cofreId;
+
+
 
   const CofreScreen({super.key, required this.cofreId});
 
@@ -28,25 +29,80 @@ class CofreScreen extends StatefulWidget {
 }
 
 class _CofreScreenState extends State<CofreScreen> {
-  // --- Formatação de Moeda e Data ---
   final NumberFormat _currencyFormat = NumberFormat.currency(
     locale: 'pt_BR',
     symbol: 'R\$ ',
     decimalDigits: 2,
   );
 
+// --- Dialog para Editar Meta (Com Formatador de Moeda) ---
+  void _mostrarDialogoEditarMeta(BuildContext context, double valorAtual) {
+    // 1. INICIALIZAÇÃO FORMATADA
+    // Já mostramos o valor atual bonito (ex: "R$ 1.000,00")
+    final controller = TextEditingController(text: _currencyFormat.format(valorAtual));
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text("Alterar Meta", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: controller,
+          // 2. CONFIGURAÇÃO DO TECLADO E FORMATADOR
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly, // Aceita só números
+            CurrencyInputFormatter(), // Aplica sua máscara mágica
+          ],
+          decoration: const InputDecoration(
+            labelText: "Novo Valor",
+            // Não precisamos de prefixText "R$ " aqui pois o formatador já coloca
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancelar")),
+          ElevatedButton(
+            onPressed: () async {
+              // 3. LIMPEZA DO VALOR (Lógica Inversa)
+              // Remove tudo que não é número (sobra "100000" de "R$ 1.000,00")
+              String valorLimpo = controller.text.replaceAll(RegExp(r'[^0-9]'), '');
+              
+              if (valorLimpo.isEmpty) return;
+
+              // Divide por 100 para voltar a ser decimal (1000.00)
+              double novoValorDouble = double.parse(valorLimpo) / 100;
+
+              if (novoValorDouble > 0) {
+                Navigator.pop(ctx); // Fecha o dialog
+                
+                // Chama o Store (convertendo para int, já que seu Model usa int para meta)
+                final store = context.read<DetalhesCofreStore>();
+                bool sucesso = await store.alterarMeta(novoValorDouble.toInt()); 
+                
+                if (mounted && sucesso) {
+                   ScaffoldMessenger.of(context).showSnackBar(
+                     const SnackBar(content: Text("Meta atualizada com sucesso!"))
+                   );
+                }
+              }
+            },
+            child: const Text("Salvar"),
+          )
+        ],
+      ),
+    );
+  }
+
   final DateFormat _dateFormat = DateFormat('dd/MM/yyyy');
 
   @override
   void initState() {
     super.initState();
-    // Dispara a busca de dados assim que o widget for criado
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _carregarDados();
     });
   }
 
-  // Função que inicia a busca de dados
   Future<void> _carregarDados() async {
     await Provider.of<DetalhesCofreStore>(
       context,
@@ -54,13 +110,11 @@ class _CofreScreenState extends State<CofreScreen> {
     ).carregarDadosCofre(widget.cofreId);
   }
 
-  // --- Widgets de Informação Reutilizáveis ---
   Widget _buildInfoCard({
     required String title,
     required String value,
     required IconData icon,
   }) {
-    // ... (Método InfoCard omitido para brevidade - está correto) ...
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -73,21 +127,24 @@ class _CofreScreenState extends State<CofreScreen> {
               children: [
                 Icon(icon, color: const Color(0xFF1E90FF), size: 24),
                 const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF333333),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF333333),
+                    ),
+                    overflow: TextOverflow.ellipsis, // Evita quebra de texto
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 15), // Ajustei para 15 para caber melhor
             Text(
               value,
               style: GoogleFonts.poppins(
-                fontSize: 20,
+                fontSize: 18, // Reduzi um pouco a fonte para caber R$ grandes
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
               ),
@@ -98,53 +155,108 @@ class _CofreScreenState extends State<CofreScreen> {
     );
   }
 
+  // --- Widget: Card de Sugestão Inteligente ---
+  Widget _buildSugestaoCard(double sugestao) {
+    // Se não tiver sugestão (meta batida ou sem data), esconde o card
+    if (sugestao <= 0.01) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20), // Espaço abaixo
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F5E9), // Verde bem clarinho (fundo)
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.green.shade200), // Borda sutil
+      ),
+      child: Row(
+        children: [
+          // Ícone de Destaque
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(color: Colors.green.withOpacity(0.2), blurRadius: 5)
+              ],
+            ),
+            child: const Icon(Icons.savings_outlined, color: Colors.green, size: 28),
+          ),
+          const SizedBox(width: 15),
+          
+          // Textos
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Sugestão de Depósito",
+                  style: GoogleFonts.poppins(
+                    fontSize: 12, 
+                    fontWeight: FontWeight.w600, 
+                    color: Colors.green.shade800
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "${_currencyFormat.format(sugestao)} /mês",
+                  style: GoogleFonts.poppins(
+                    fontSize: 20, 
+                    fontWeight: FontWeight.bold, 
+                    color: Colors.green.shade900
+                  ),
+                ),
+                Text(
+                  "para cada membro até a viagem",
+                  style: GoogleFonts.poppins(fontSize: 11, color: Colors.green.shade700),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final store = context.watch<DetalhesCofreStore>();
-    final cofre = store.cofreAtivo;
-    final isLoading = store.isLoading;
+    final detalhesStore = context.watch<DetalhesCofreStore>();
+    final cofre = detalhesStore.cofreAtivo;
+    final isLoading = detalhesStore.isLoading;
 
     if (isLoading && cofre == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    if (store.errorMessage != null || cofre == null) {
+    if (detalhesStore.errorMessage != null || cofre == null) {
       return Scaffold(
         appBar: AppBar(title: const Text("Erro")),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                "Não foi possível carregar o cofre.",
-                style: GoogleFonts.poppins(),
-              ),
+              Text("Não foi possível carregar o cofre.", style: GoogleFonts.poppins()),
               const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: _carregarDados,
-                child: const Text("Tentar Novamente"),
-              ),
+              ElevatedButton(onPressed: _carregarDados, child: const Text("Tentar Novamente")),
             ],
           ),
         ),
       );
     }
 
-    // --- Estrutura de Dados Dinâmicos ---
-    // Os dados são lidos diretamente do cofreAtivo e do totalArrecadado
+    // Variáveis Seguras (Bang Operator '!')
     final double valorAlvo = cofre.valorPlano.toDouble();
-    final double valorArrecadado = store.totalArrecadado;
+    final double valorArrecadado = detalhesStore.totalArrecadado;
+    final double valorGasto = detalhesStore.totalGasto;
+    final double saldoDisponivel = detalhesStore.saldoDisponivel;
+    final double valorPlanejado = detalhesStore.totalPlanejado;
+    final double sugestao = detalhesStore.sugestaoMensal;
 
-    // Cálculos e Formatação
-    final double progress = (valorAlvo != 0)
-        ? (valorArrecadado / valorAlvo)
-        : 0.0;
-    final double valorRestante = (valorAlvo - valorArrecadado).clamp(
-      0.0,
-      double.infinity,
-    );
 
-    // --- Layout da View (Dashboard) ---
+    final double progress = (valorAlvo != 0) ? (valorArrecadado / valorAlvo) : 0.0;
+    final double valorRestante = (valorAlvo - valorArrecadado).clamp(0.0, double.infinity);
+    final bool orcamentoEstourado = valorPlanejado > valorAlvo;
+
     return Scaffold(
       backgroundColor: const Color(0xFF1E90FF),
       body: Column(
@@ -163,12 +275,8 @@ class _CofreScreenState extends State<CofreScreen> {
               child: RefreshIndicator(
                 onRefresh: _carregarDados,
                 child: SingleChildScrollView(
-                  physics:
-                      const AlwaysScrollableScrollPhysics(), // Permite puxar para atualizar mesmo se a lista for pequena
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24.0,
-                    vertical: 30.0,
-                  ),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 30.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -190,132 +298,168 @@ class _CofreScreenState extends State<CofreScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
-                          boxShadow: const [
-                            BoxShadow(color: Colors.black12, blurRadius: 10),
-                          ],
+                          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)],
                         ),
                         child: Column(
                           children: [
+                            // 1. O VALOR QUE IMPORTA (Dinheiro na mão)
                             Text(
-                              'Meta: ${_currencyFormat.format(valorAlvo)}',
-                              style: GoogleFonts.poppins(fontSize: 16.0),
+                              'Arrecadado',
+                              style: GoogleFonts.poppins(fontSize: 14.0, color: Colors.grey[600]),
                             ),
-                            const SizedBox(height: 10),
                             Text(
-                              'Arrecadado: ${_currencyFormat.format(valorArrecadado)}',
+                              _currencyFormat.format(valorArrecadado),
                               style: GoogleFonts.poppins(
-                                fontSize: 20.0,
+                                fontSize: 32.0, // Bem grande!
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFF1E90FF),
                               ),
                             ),
+                            
                             const SizedBox(height: 20),
+                            
+                            // 2. A BARRA (Baseada na Meta)
                             LinearProgressIndicator(
-                              value: progress,
-                              backgroundColor: Colors.grey.shade300,
+                              value: progress.clamp(0.0, 1.0),
+                              backgroundColor: Colors.grey.shade200,
                               color: const Color(0xFF1E90FF),
-                              minHeight: 10,
-                              borderRadius: BorderRadius.circular(5),
+                              minHeight: 12,
+                              borderRadius: BorderRadius.circular(6),
                             ),
-                            const SizedBox(height: 5),
-                            Text(
-                              '${(progress * 100).toStringAsFixed(0)}% Concluído',
-                              style: GoogleFonts.poppins(
-                                fontSize: 14.0,
-                                color: Colors.black54,
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                '${(progress * 100).toStringAsFixed(0)}% da Meta',
+                                style: GoogleFonts.poppins(fontSize: 12.0, color: Colors.grey[600]),
                               ),
                             ),
+
+                            const Divider(height: 30),
+
+                            // 3. O COMPARATIVO (Meta vs Planejado)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // Lado Esquerdo: A META (Agora Editável)
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text('Meta do Cofre', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey)),
+                                        const SizedBox(width: 4),
+                                        
+                                        // BOTÃO DE EDITAR (Pequeno e discreto)
+                                        InkWell(
+                                          onTap: () => _mostrarDialogoEditarMeta(context, valorAlvo),
+                                          child: const Padding(
+                                            padding: EdgeInsets.all(4.0),
+                                            child: Icon(Icons.edit, size: 14, color: Color(0xFF1E90FF)),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Text(
+                                      _currencyFormat.format(valorAlvo),
+                                      style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                                    ),
+                                  ],
+                                ),
+
+                                // Lado Direito: O CUSTO PLANEJADO (Sua ideia!)
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        if (orcamentoEstourado) 
+                                          const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 16),
+                                        const SizedBox(width: 4),
+                                        Text('Custo Planejado', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey)),
+                                      ],
+                                    ),
+                                    Text(
+                                      _currencyFormat.format(valorPlanejado),
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16, 
+                                        fontWeight: FontWeight.bold, 
+                                        // Se estourou, fica Laranja para avisar!
+                                        color: orcamentoEstourado ? Colors.orange[800] : Colors.green[700]
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            
+                            // Mensagem de aviso opcional se estourar
+                            if (orcamentoEstourado)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Text(
+                                  "Atenção: Seus planos custam mais que sua meta!",
+                                  style: GoogleFonts.poppins(fontSize: 11, color: Colors.orange[800], fontStyle: FontStyle.italic),
+                                ),
+                              ),
                           ],
                         ),
                       ),
 
-                      const SizedBox(height: 40.0),
+                      const SizedBox(height: 30.0),
+
+                      // Sugestão
+                      _buildSugestaoCard(sugestao),
 
                       // Botões de Ação
                       ElevatedButton(
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  Contribuicao(cofreId: widget.cofreId),
-                            ),
-                          ).then(
-                            (_) => _carregarDados(),
-                          ); // Recarrega ao voltar
+                            MaterialPageRoute(builder: (context) => Contribuicao(cofreId: widget.cofreId)),
+                          ).then((_) => _carregarDados());
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(
-                            255,
-                            255,
-                            187,
-                            0,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15.0),
-                          ),
+                          backgroundColor: const Color.fromARGB(255, 255, 187, 0),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
                           padding: const EdgeInsets.symmetric(vertical: 16.0),
                         ),
-                        child: Text(
-                          'Adicionar Contribuição',
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            color: Colors.white,
-                          ),
-                        ),
+                        child: Text('Adicionar Contribuição', style: GoogleFonts.poppins(fontSize: 18, color: Colors.white)),
                       ),
 
                       const SizedBox(height: 20.0),
 
-                      // 🎯 NOVO: Botão Registrar Despesa (Splitwise)
+                      // Botão Planejamento
                       ElevatedButton(
                         onPressed: () {
-                          // ⚠️ Assumindo a criação da tela RegistrarDespesa.dart
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => RegistrarDespesa(cofreId: widget.cofreId)));
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => PlanejamentoScreen(cofreId: widget.cofreId)),
+                          );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors
-                              .red
-                              .shade400, // Cor de destaque para despesas
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15.0),
-                          ),
+                          backgroundColor: Colors.purple.shade400,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
                           padding: const EdgeInsets.symmetric(vertical: 16.0),
                         ),
-                        child: Text(
-                          'Registrar Despesa',
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            color: Colors.white,
-                          ),
-                        ),
+                        child: Text('Planejamento de Custos', style: GoogleFonts.poppins(fontSize: 18, color: Colors.white)),
                       ),
-                       const SizedBox(height: 20.0),
+
+                      const SizedBox(height: 20.0),
 
                       ElevatedButton(
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  ListaUser(cofreId: widget.cofreId),
-                            ),
+                            MaterialPageRoute(builder: (context) => ListaUser(cofreId: widget.cofreId)),
                           );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1E90FF),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15.0),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
                           padding: const EdgeInsets.symmetric(vertical: 16.0),
                         ),
-                        child: Text(
-                          'Visualizar Participantes',
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            color: Colors.white,
-                          ),
-                        ),
+                        child: Text('Visualizar Participantes', style: GoogleFonts.poppins(fontSize: 18, color: Colors.white)),
                       ),
 
                       const SizedBox(height: 30.0),
@@ -342,21 +486,37 @@ class _CofreScreenState extends State<CofreScreen> {
                       ),
                       const SizedBox(height: 10),
 
+                      // NOVOS CARDS (Gastos e Saldo)
+                      Row(
+                        children: [
+                          Expanded(child: _buildInfoCard(
+                            title: 'Total Gasto', 
+                            value: _currencyFormat.format(valorGasto), 
+                            icon: Icons.shopping_cart_outlined,
+                          )),
+                          const SizedBox(width: 10),
+                          Expanded(child: _buildInfoCard(
+                            title: 'Saldo Disp.', 
+                            value: _currencyFormat.format(saldoDisponivel), 
+                            icon: Icons.account_balance_wallet_outlined,
+                          )),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
                       Row(
                         children: [
                           Expanded(
                             child: _buildInfoCard(
-                              title: 'Início da Viagem',
-                              value: cofre.dataViagem != null
-                                  ? _dateFormat.format(cofre.dataViagem!)
-                                  : '---',
+                              title: 'Início',
+                              value: cofre.dataViagem != null ? _dateFormat.format(cofre.dataViagem!) : '---',
                               icon: Icons.calendar_today,
                             ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: _buildInfoCard(
-                              title: 'Código de Acesso',
+                              title: 'Código',
                               value: cofre.joinCode,
                               icon: Icons.lock_open,
                             ),
@@ -366,28 +526,19 @@ class _CofreScreenState extends State<CofreScreen> {
 
                       const SizedBox(height: 30.0),
 
-                      // ## Botão de Saldos e Acertos (Splitwise)
                       ElevatedButton(
                         onPressed: () {
-                          // (Esta tela mostrará quem deve a quem e quanto)
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => Saldos(cofreId: widget.cofreId)));
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const BalancoScreen()),
+                          );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors
-                              .green
-                              .shade600, // Cor de destaque para acertos
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15.0),
-                          ),
+                          backgroundColor: Colors.redAccent,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
                           padding: const EdgeInsets.symmetric(vertical: 16.0),
                         ),
-                        child: Text(
-                          'Saldos e Acertos',
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            color: Colors.white,
-                          ),
-                        ),
+                        child: Text('Balanço e Gastos', style: GoogleFonts.poppins(fontSize: 18, color: Colors.white)),
                       ),
 
                       const SizedBox(height: 30.0),
@@ -396,26 +547,15 @@ class _CofreScreenState extends State<CofreScreen> {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  Historicocontr(cofreId: widget.cofreId),
-                            ),
+                            MaterialPageRoute(builder: (context) => Historicocontr(cofreId: widget.cofreId)),
                           );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.grey.shade400,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15.0),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
                           padding: const EdgeInsets.symmetric(vertical: 16.0),
                         ),
-                        child: Text(
-                          'Histórico de Contribuições',
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            color: Colors.black,
-                          ),
-                        ),
+                        child: Text('Histórico de Contribuições', style: GoogleFonts.poppins(fontSize: 18, color: Colors.black)),
                       ),
                       const SizedBox(height: 50.0),
                     ],
@@ -430,31 +570,3 @@ class _CofreScreenState extends State<CofreScreen> {
     );
   }
 }
-
-// Esta é uma tela temporária só para testar a navegação da Home
-/*
-class CofreScreen extends StatelessWidget {
-  final String cofreId;
-
-  const CofreScreen({super.key, required this.cofreId});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Detalhes (Em Construção)")),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.construction, size: 60, color: Colors.orange),
-            const SizedBox(height: 20),
-            Text("Você clicou no cofre ID:\n$cofreId", textAlign: TextAlign.center),
-            const SizedBox(height: 20),
-            const Text("Fase 3: Implementaremos esta tela a seguir!"),
-          ],
-        ),
-      ),
-    );
-  }
-}
-*/

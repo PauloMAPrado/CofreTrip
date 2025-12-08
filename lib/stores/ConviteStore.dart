@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:travelbox/models/convite.dart';
 import 'package:travelbox/models/permissao.dart';
-import 'package:travelbox/models/statusConvite.dart';
+import 'package:travelbox/models/enums/statusConvite.dart';
 import 'package:travelbox/models/usuario.dart';
-import 'package:travelbox/models/nivelPermissao.dart';
+import 'package:travelbox/models/enums/nivelPermissao.dart';
 import 'package:travelbox/services/FirestoreService.dart';
 
 class ConviteStore extends ChangeNotifier {

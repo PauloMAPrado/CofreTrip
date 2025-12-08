@@ -26,6 +26,14 @@ class _ContribuicaoState extends State<Contribuicao> {
   String? _formaPagamentoSelecionada; 
   
   final DateFormat _dateFormat = DateFormat('yyyy-MM-dd');
+  final NumberFormat _currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$', decimalDigits: 2);
+
+  @override
+  void initState() {
+    super.initState();
+    // Pré-preenche a data com hoje
+    _dataController.text = _dateFormat.format(DateTime.now());
+  }
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -50,11 +58,13 @@ class _ContribuicaoState extends State<Contribuicao> {
       return;
     }
     
-    // 2. Tratamento do Valor
-    final cleanValor = valorRaw.replaceAll('.', '').replaceAll(',', '.').trim(); 
-    final double? valorContribuicao = double.tryParse(cleanValor);
+    // 2. Tratamento do Valor (Remove R$ e pontuação)
+    final cleanValor = valorRaw.replaceAll(RegExp(r'[^0-9]'), ''); 
+    if (cleanValor.isEmpty) return;
+    
+    final double valorContribuicao = double.parse(cleanValor) / 100;
 
-    if (valorContribuicao == null || valorContribuicao <= 0) {
+    if (valorContribuicao <= 0) {
       FeedbackHelper.mostrarErro(context, 'Insira um valor válido maior que R\$ 0,00.');
       return;
     }
@@ -89,7 +99,11 @@ class _ContribuicaoState extends State<Contribuicao> {
   @override
   Widget build(BuildContext context) {
     // Loading Global do Store
-    final bool isLoading = context.watch<DetalhesCofreStore>().isLoading;
+    final detalhesStore = context.watch<DetalhesCofreStore>();
+    final bool isLoading = detalhesStore.isLoading;
+    
+    // Pegamos a sugestão calculada
+    final double sugestao = detalhesStore.sugestaoMensal;
 
     return Scaffold(
       backgroundColor: const Color(0xFF1E90FF),
@@ -110,24 +124,56 @@ class _ContribuicaoState extends State<Contribuicao> {
                       Text('Nova Contribuição', textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 20.0, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 30.0),
                       
-                      // VALOR
+                      // CAMPO VALOR
                       TextField(
                         controller: _valorController,
                         enabled: !isLoading,
-                        keyboardType: TextInputType.number, // Teclado numérico simples
-                        
-                        // USA O NOVO FORMATADOR
+                        keyboardType: TextInputType.number,
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
                           CurrencyInputFormatter(),
                         ],
-                        
                         decoration: InputDecoration(
                           labelText: 'Valor', 
-                          // Removemos prefixText 'R$' pois já está no texto
+                          prefixIcon: const Icon(Icons.attach_money, color: Color(0xFF1E90FF)),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0))
                         ),
                       ),
+                      
+                      // 👇👇 RECOMENDAÇÃO INTELIGENTE 👇👇
+                      if (sugestao > 0) ...[
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: () {
+                            // Ao clicar, preenche o campo com a sugestão
+                            _valorController.text = _currencyFormat.format(sugestao);
+                          },
+                          child: Row(
+                            children: [
+                              const Icon(Icons.lightbulb_outline, size: 16, color: Colors.amber),
+                              const SizedBox(width: 6),
+                              RichText(
+                                text: TextSpan(
+                                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
+                                  children: [
+                                    const TextSpan(text: "Sugerido para este mês: "),
+                                    TextSpan(
+                                      text: _currencyFormat.format(sugestao),
+                                      style: const TextStyle(
+                                        color: Color(0xFF1E90FF), 
+                                        fontWeight: FontWeight.bold,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      // 👆👆 FIM DA RECOMENDAÇÃO 👆👆
+
                       const SizedBox(height: 20.0),
                       
                       // DATA

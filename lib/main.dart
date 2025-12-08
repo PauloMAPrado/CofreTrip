@@ -12,7 +12,6 @@ import 'package:provider/provider.dart';
 import 'package:travelbox/services/AuthService.dart';
 import 'package:travelbox/stores/authStore.dart';
 import 'package:travelbox/services/FirestoreService.dart';
-import 'package:travelbox/stores/despesaStore.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,11 +60,11 @@ class MyApp extends StatelessWidget {
           ),
         ),
 
-        ChangeNotifierProvider<DespesaProvider>(
-          // Usa context.read<FirestoreService>() para injetar a dependência.
-          create: (context) =>
-              DespesaProvider(context.read<FirestoreService>()),
-        ),
+        // ChangeNotifierProvider<DespesaProvider>(
+        //   // Usa context.read<FirestoreService>() para injetar a dependência.
+        //   create: (context) =>
+        //       DespesaProvider(context.read<FirestoreService>()),
+        // ),
       ],
 
       child: Consumer<AuthStore>(

@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:travelbox/models/nivelPermissao.dart';
+import 'package:travelbox/models/enums/nivelPermissao.dart';
 
 class Permissao {
   final String? id;

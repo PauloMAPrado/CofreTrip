@@ -1,7 +1,7 @@
 import "package:flutter/material.dart";
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:travelbox/models/nivelPermissao.dart';
+import 'package:travelbox/models/enums/nivelPermissao.dart';
 import 'package:travelbox/views/modules/header.dart';
 import 'package:travelbox/views/modules/footbar.dart';
 import 'package:travelbox/utils/feedbackHelper.dart'; // Importante para feedbacks
