@@ -1,21 +1,16 @@
-// Imports essenciais
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
-// Stores e Models
+// Imports do Projeto
 import 'package:travelbox/stores/detalhesCofreStore.dart';
-import 'package:travelbox/models/enums/categoriaDespesa.dart'; // Enum atualizado
-//import 'package:travelbox/models/despesa.dart';
-//import 'package:travelbox/models/enums/tipoDespesa.dart';
-
-
-
-// Utils e Views
+import 'package:travelbox/models/despesa.dart';
+import 'package:travelbox/models/enums/categoriaDespesa.dart';
+import 'package:travelbox/models/enums/tipoDespesa.dart';
 import 'package:travelbox/utils/feedbackHelper.dart';
-import 'package:travelbox/utils/currency_input_formatter.dart'; // Seu formatador mágico
+import 'package:travelbox/utils/currency_input_formatter.dart';
 import 'package:travelbox/views/modules/header.dart';
 import 'package:travelbox/views/modules/footbar.dart';
 
@@ -30,20 +25,24 @@ class PlanejamentoScreen extends StatefulWidget {
 class _PlanejamentoScreenState extends State<PlanejamentoScreen> {
   final NumberFormat _currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$', decimalDigits: 2);
 
-  // --- Função para Adicionar Nova Estimativa (Dialog) ---
-  void _mostrarDialogoAdicionar(BuildContext context) {
-    final tituloController = TextEditingController();
-    final valorController = TextEditingController(text: "R\$ 0,00");
-    CategoriaDespesa categoriaSelecionada = CategoriaDespesa.outros;
+  // --- Diálogo Unificado (Criar ou Editar) ---
+  void _mostrarDialogoFormulario(BuildContext context, {Despesa? despesaParaEditar}) {
+    final isEditing = despesaParaEditar != null;
+    
+    final tituloController = TextEditingController(text: isEditing ? despesaParaEditar.titulo : "");
+    // Se estiver editando, já formata o valor atual
+    final valorInicial = isEditing ? _currencyFormat.format(despesaParaEditar.valor) : "R\$ 0,00";
+    final valorController = TextEditingController(text: valorInicial);
+    
+    CategoriaDespesa categoriaSelecionada = isEditing ? despesaParaEditar.categoria : CategoriaDespesa.outros;
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text("Nova Estimativa", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        title: Text(isEditing ? "Editar Estimativa" : "Nova Estimativa", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Titulo
             TextField(
               controller: tituloController,
               decoration: InputDecoration(
@@ -53,7 +52,6 @@ class _PlanejamentoScreenState extends State<PlanejamentoScreen> {
             ),
             const SizedBox(height: 10),
             
-            // Valor
             TextField(
               controller: valorController,
               keyboardType: TextInputType.number,
@@ -65,7 +63,6 @@ class _PlanejamentoScreenState extends State<PlanejamentoScreen> {
             ),
             const SizedBox(height: 10),
 
-            // Categoria (Dropdown)
             DropdownButtonFormField<CategoriaDespesa>(
               value: categoriaSelecionada,
               decoration: InputDecoration(
@@ -75,7 +72,6 @@ class _PlanejamentoScreenState extends State<PlanejamentoScreen> {
               items: CategoriaDespesa.values.map((cat) {
                 return DropdownMenuItem(
                   value: cat,
-                  // Aqui usamos .name e capitalizamos a primeira letra, ou criamos um helper 'nome' no enum
                   child: Text(cat.name.toUpperCase()), 
                 );
               }).toList(),
@@ -90,7 +86,7 @@ class _PlanejamentoScreenState extends State<PlanejamentoScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E90FF)),
             onPressed: () async {
-              // 1. Tratamento do Valor
+              // Tratamento do Valor
               final valorRaw = valorController.text.replaceAll(RegExp(r'[^0-9]'), '');
               if (valorRaw.isEmpty) return;
               final double valorFinal = double.parse(valorRaw) / 100;
@@ -100,35 +96,78 @@ class _PlanejamentoScreenState extends State<PlanejamentoScreen> {
                 return;
               }
 
-              // 2. Salvar no Store
               final store = context.read<DetalhesCofreStore>();
-              Navigator.pop(ctx); // Fecha o dialog antes de chamar o async
+              Navigator.pop(ctx); 
 
-              bool sucesso = await store.adicionarDespesaPlanejada(
-                titulo: tituloController.text.trim(),
-                valor: valorFinal,
-                categoria: categoriaSelecionada,
-              );
+              bool sucesso;
+              
+              if (isEditing) {
+                // MODO EDIÇÃO: Atualiza o objeto existente
+                // Usamos um novo construtor ou copyWith (se tiver) para manter o ID
+                Despesa editada = Despesa(
+                  id: despesaParaEditar.id, // IMPORTANTE: Manter o ID
+                  idCofre: despesaParaEditar.idCofre,
+                  titulo: tituloController.text.trim(),
+                  valor: valorFinal,
+                  tipo: TipoDespesa.planejada,
+                  categoria: categoriaSelecionada,
+                  // Campos de data/pagador mantêm-se nulos pois é planejamento
+                );
+                sucesso = await store.editarDespesa(editada);
+              } else {
+                // MODO CRIAÇÃO
+                sucesso = await store.adicionarDespesaPlanejada(
+                  titulo: tituloController.text.trim(),
+                  valor: valorFinal,
+                  categoria: categoriaSelecionada,
+                );
+              }
 
               if (mounted) {
                 if (sucesso) {
-                  FeedbackHelper.mostrarSucesso(context, "Estimativa adicionada!");
+                  FeedbackHelper.mostrarSucesso(context, isEditing ? "Atualizado com sucesso!" : "Adicionado com sucesso!");
                 } else {
                   FeedbackHelper.mostrarErro(context, store.errorMessage);
                 }
               }
             },
-            child: const Text("Adicionar", style: TextStyle(color: Colors.white)),
+            child: Text(isEditing ? "Salvar" : "Adicionar", style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
 
-  // --- Widget Card de Resumo (A Lógica da Mensalidade) ---
+  // --- Função de Confirmação de Exclusão ---
+  void _confirmarExclusao(BuildContext context, Despesa despesa) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Excluir Item?"),
+        content: Text("Tem certeza que deseja remover '${despesa.titulo}' do planejamento?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancelar")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final store = context.read<DetalhesCofreStore>();
+              bool sucesso = await store.removerDespesa(despesa.id!);
+              
+              if (mounted && sucesso) {
+                 FeedbackHelper.mostrarSucesso(context, "Item removido.");
+              }
+            },
+            child: const Text("Excluir", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSummaryCard(DetalhesCofreStore store) {
     double total = store.totalPlanejado;
-    double mensalidade = store.sugestaoMensal; // Usa o cálculo inteligente que fizemos
+    double mensalidade = store.sugestaoMensal;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -180,14 +219,14 @@ class _PlanejamentoScreenState extends State<PlanejamentoScreen> {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<DetalhesCofreStore>();
-    final listaPlanejada = store.despesasPlanejadas; // Getter filtrado que criamos
+    final listaPlanejada = store.despesasPlanejadas;
 
     return Scaffold(
       backgroundColor: const Color(0xFF1E90FF),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 80.0), // 80px deve ser suficiente para ficar acima da Footbar
+        padding: const EdgeInsets.only(bottom: 80.0),
         child: FloatingActionButton(
-          onPressed: () => _mostrarDialogoAdicionar(context),
+          onPressed: () => _mostrarDialogoFormulario(context), // Modo Criação (sem parâmetro)
           backgroundColor: Colors.amber,
           child: const Icon(Icons.add, color: Colors.white),
         ),
@@ -208,10 +247,8 @@ class _PlanejamentoScreenState extends State<PlanejamentoScreen> {
                     Text('Planejamento', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 20),
                     
-                    // Resumo Financeiro
                     _buildSummaryCard(store),
 
-                    // Lista de Itens
                     Expanded(
                       child: listaPlanejada.isEmpty
                           ? Center(
@@ -221,12 +258,11 @@ class _PlanejamentoScreenState extends State<PlanejamentoScreen> {
                                   Icon(Icons.list_alt, size: 50, color: Colors.grey[300]),
                                   const SizedBox(height: 10),
                                   Text("Nenhuma despesa planejada.", style: GoogleFonts.poppins(color: Colors.grey)),
-                                  Text("Toque no + para adicionar.", style: GoogleFonts.poppins(color: Colors.grey, fontSize: 12)),
                                 ],
                               ),
                             )
                           : ListView.builder(
-                              padding: const EdgeInsets.only(bottom: 80), // Espaço para o FAB
+                              padding: const EdgeInsets.only(bottom: 80),
                               itemCount: listaPlanejada.length,
                               itemBuilder: (context, index) {
                                 final item = listaPlanejada[index];
@@ -241,9 +277,36 @@ class _PlanejamentoScreenState extends State<PlanejamentoScreen> {
                                     ),
                                     title: Text(item.titulo, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
                                     subtitle: Text(item.categoria.name.toUpperCase(), style: const TextStyle(fontSize: 10)),
-                                    trailing: Text(
-                                      _currencyFormat.format(item.valor),
-                                      style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 15),
+                                    
+                                    // PREÇO E BOTÕES
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          _currencyFormat.format(item.valor),
+                                          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 15),
+                                        ),
+                                        // MENU DE OPÇÕES (Editar/Excluir)
+                                        PopupMenuButton<String>(
+                                          onSelected: (value) {
+                                            if (value == 'edit') {
+                                              _mostrarDialogoFormulario(context, despesaParaEditar: item);
+                                            } else if (value == 'delete') {
+                                              _confirmarExclusao(context, item);
+                                            }
+                                          },
+                                          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                                            const PopupMenuItem<String>(
+                                              value: 'edit',
+                                              child: Row(children: [Icon(Icons.edit, size: 18, color: Colors.blue), SizedBox(width: 8), Text('Editar')]),
+                                            ),
+                                            const PopupMenuItem<String>(
+                                              value: 'delete',
+                                              child: Row(children: [Icon(Icons.delete, size: 18, color: Colors.red), SizedBox(width: 8), Text('Excluir')]),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 );

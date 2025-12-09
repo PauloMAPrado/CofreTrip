@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:travelbox/models/enums/nivelPermissao.dart';
 import 'package:travelbox/utils/currency_input_formatter.dart';
 import 'package:travelbox/views/balanco.dart';
 
@@ -16,11 +17,11 @@ import 'package:travelbox/views/planejamento.dart';
 
 // Imports Store
 import 'package:travelbox/stores/detalhesCofreStore.dart';
+import 'package:travelbox/stores/authStore.dart';
+import 'package:travelbox/models/enums/nivelPermissao.dart'; // Importe o Enum
 
 class CofreScreen extends StatefulWidget {
   final String cofreId;
-
-
 
   const CofreScreen({super.key, required this.cofreId});
 
@@ -35,10 +36,35 @@ class _CofreScreenState extends State<CofreScreen> {
     decimalDigits: 2,
   );
 
-// --- Dialog para Editar Meta (Com Formatador de Moeda) ---
+  final DateFormat _dateFormat = DateFormat('dd/MM/yyyy');
+
+  // NOVA FUNÇÃO: Confirmar Encerramento
+  void _confirmarEncerramento(BuildContext context, DetalhesCofreStore store) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Encerrar Viagem?"),
+        content: const Text("Ao encerrar, ninguém poderá adicionar novos gastos. Apenas acertos de dívidas serão permitidos na tela de Balanço.\n\nEssa ação não pode ser desfeita."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancelar")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              bool sucesso = await store.encerrarViagem();
+              if (mounted && sucesso) {
+                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Viagem encerrada com sucesso.")));
+              }
+            },
+            child: const Text("Encerrar Agora", style: TextStyle(color: Colors.white)),
+          )
+        ],
+      ),
+    );
+  }
+
+  // --- Dialog para Editar Meta ---
   void _mostrarDialogoEditarMeta(BuildContext context, double valorAtual) {
-    // 1. INICIALIZAÇÃO FORMATADA
-    // Já mostramos o valor atual bonito (ex: "R$ 1.000,00")
     final controller = TextEditingController(text: _currencyFormat.format(valorAtual));
     
     showDialog(
@@ -47,15 +73,13 @@ class _CofreScreenState extends State<CofreScreen> {
         title: Text("Alterar Meta", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
         content: TextField(
           controller: controller,
-          // 2. CONFIGURAÇÃO DO TECLADO E FORMATADOR
           keyboardType: TextInputType.number,
           inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly, // Aceita só números
-            CurrencyInputFormatter(), // Aplica sua máscara mágica
+            FilteringTextInputFormatter.digitsOnly, 
+            CurrencyInputFormatter(), 
           ],
           decoration: const InputDecoration(
             labelText: "Novo Valor",
-            // Não precisamos de prefixText "R$ " aqui pois o formatador já coloca
             border: OutlineInputBorder(),
           ),
         ),
@@ -63,22 +87,14 @@ class _CofreScreenState extends State<CofreScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancelar")),
           ElevatedButton(
             onPressed: () async {
-              // 3. LIMPEZA DO VALOR (Lógica Inversa)
-              // Remove tudo que não é número (sobra "100000" de "R$ 1.000,00")
               String valorLimpo = controller.text.replaceAll(RegExp(r'[^0-9]'), '');
-              
               if (valorLimpo.isEmpty) return;
-
-              // Divide por 100 para voltar a ser decimal (1000.00)
               double novoValorDouble = double.parse(valorLimpo) / 100;
 
               if (novoValorDouble > 0) {
-                Navigator.pop(ctx); // Fecha o dialog
-                
-                // Chama o Store (convertendo para int, já que seu Model usa int para meta)
+                Navigator.pop(ctx); 
                 final store = context.read<DetalhesCofreStore>();
                 bool sucesso = await store.alterarMeta(novoValorDouble.toInt()); 
-                
                 if (mounted && sucesso) {
                    ScaffoldMessenger.of(context).showSnackBar(
                      const SnackBar(content: Text("Meta atualizada com sucesso!"))
@@ -92,8 +108,6 @@ class _CofreScreenState extends State<CofreScreen> {
       ),
     );
   }
-
-  final DateFormat _dateFormat = DateFormat('dd/MM/yyyy');
 
   @override
   void initState() {
@@ -135,16 +149,16 @@ class _CofreScreenState extends State<CofreScreen> {
                       fontWeight: FontWeight.w600,
                       color: const Color(0xFF333333),
                     ),
-                    overflow: TextOverflow.ellipsis, // Evita quebra de texto
+                    overflow: TextOverflow.ellipsis, 
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 15), // Ajustei para 15 para caber melhor
+            const SizedBox(height: 15), 
             Text(
               value,
               style: GoogleFonts.poppins(
-                fontSize: 18, // Reduzi um pouco a fonte para caber R$ grandes
+                fontSize: 18, 
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
               ),
@@ -157,20 +171,18 @@ class _CofreScreenState extends State<CofreScreen> {
 
   // --- Widget: Card de Sugestão Inteligente ---
   Widget _buildSugestaoCard(double sugestao) {
-    // Se não tiver sugestão (meta batida ou sem data), esconde o card
     if (sugestao <= 0.01) return const SizedBox.shrink();
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 20), // Espaço abaixo
+      margin: const EdgeInsets.only(bottom: 20), 
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8F5E9), // Verde bem clarinho (fundo)
+        color: const Color(0xFFE8F5E9), 
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.green.shade200), // Borda sutil
+        border: Border.all(color: Colors.green.shade200), 
       ),
       child: Row(
         children: [
-          // Ícone de Destaque
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -183,8 +195,6 @@ class _CofreScreenState extends State<CofreScreen> {
             child: const Icon(Icons.savings_outlined, color: Colors.green, size: 28),
           ),
           const SizedBox(width: 15),
-          
-          // Textos
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,8 +231,17 @@ class _CofreScreenState extends State<CofreScreen> {
   @override
   Widget build(BuildContext context) {
     final detalhesStore = context.watch<DetalhesCofreStore>();
+    final authStore = context.watch<AuthStore>();
     final cofre = detalhesStore.cofreAtivo;
     final isLoading = detalhesStore.isLoading;
+    final bool isFinalizado = detalhesStore.isCofreFinalizado;
+
+    final meuId = authStore.usuario?.id;
+    bool souCoordenador = false;
+    try {
+        final minhaPermissao = detalhesStore.membros.firstWhere((m) => m.idUsuario == meuId);
+        souCoordenador = minhaPermissao.nivelPermissao == NivelPermissao.coordenador;
+    } catch (_) {}
 
     if (isLoading && cofre == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -251,7 +270,6 @@ class _CofreScreenState extends State<CofreScreen> {
     final double saldoDisponivel = detalhesStore.saldoDisponivel;
     final double valorPlanejado = detalhesStore.totalPlanejado;
     final double sugestao = detalhesStore.sugestaoMensal;
-
 
     final double progress = (valorAlvo != 0) ? (valorArrecadado / valorAlvo) : 0.0;
     final double valorRestante = (valorAlvo - valorArrecadado).clamp(0.0, double.infinity);
@@ -302,7 +320,6 @@ class _CofreScreenState extends State<CofreScreen> {
                         ),
                         child: Column(
                           children: [
-                            // 1. O VALOR QUE IMPORTA (Dinheiro na mão)
                             Text(
                               'Arrecadado',
                               style: GoogleFonts.poppins(fontSize: 14.0, color: Colors.grey[600]),
@@ -310,7 +327,7 @@ class _CofreScreenState extends State<CofreScreen> {
                             Text(
                               _currencyFormat.format(valorArrecadado),
                               style: GoogleFonts.poppins(
-                                fontSize: 32.0, // Bem grande!
+                                fontSize: 32.0, 
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFF1E90FF),
                               ),
@@ -318,7 +335,6 @@ class _CofreScreenState extends State<CofreScreen> {
                             
                             const SizedBox(height: 20),
                             
-                            // 2. A BARRA (Baseada na Meta)
                             LinearProgressIndicator(
                               value: progress.clamp(0.0, 1.0),
                               backgroundColor: Colors.grey.shade200,
@@ -337,11 +353,11 @@ class _CofreScreenState extends State<CofreScreen> {
 
                             const Divider(height: 30),
 
-                            // 3. O COMPARATIVO (Meta vs Planejado)
+                            // COMPARATIVO (Meta vs Planejado)
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                // Lado Esquerdo: A META (Agora Editável)
+                                // Lado Esquerdo: A META
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -350,14 +366,15 @@ class _CofreScreenState extends State<CofreScreen> {
                                         Text('Meta do Cofre', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey)),
                                         const SizedBox(width: 4),
                                         
-                                        // BOTÃO DE EDITAR (Pequeno e discreto)
-                                        InkWell(
-                                          onTap: () => _mostrarDialogoEditarMeta(context, valorAlvo),
-                                          child: const Padding(
-                                            padding: EdgeInsets.all(4.0),
-                                            child: Icon(Icons.edit, size: 14, color: Color(0xFF1E90FF)),
+                                        // BOTÃO EDITAR META (Só aparece se aberto)
+                                        if (!isFinalizado)
+                                          InkWell(
+                                            onTap: () => _mostrarDialogoEditarMeta(context, valorAlvo),
+                                            child: const Padding(
+                                              padding: EdgeInsets.all(4.0),
+                                              child: Icon(Icons.edit, size: 14, color: Color(0xFF1E90FF)),
+                                            ),
                                           ),
-                                        ),
                                       ],
                                     ),
                                     Text(
@@ -367,7 +384,7 @@ class _CofreScreenState extends State<CofreScreen> {
                                   ],
                                 ),
 
-                                // Lado Direito: O CUSTO PLANEJADO (Sua ideia!)
+                                // Lado Direito: O CUSTO PLANEJADO
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
@@ -384,7 +401,6 @@ class _CofreScreenState extends State<CofreScreen> {
                                       style: GoogleFonts.poppins(
                                         fontSize: 16, 
                                         fontWeight: FontWeight.bold, 
-                                        // Se estourou, fica Laranja para avisar!
                                         color: orcamentoEstourado ? Colors.orange[800] : Colors.green[700]
                                       ),
                                     ),
@@ -393,7 +409,6 @@ class _CofreScreenState extends State<CofreScreen> {
                               ],
                             ),
                             
-                            // Mensagem de aviso opcional se estourar
                             if (orcamentoEstourado)
                               Padding(
                                 padding: const EdgeInsets.only(top: 8.0),
@@ -408,44 +423,60 @@ class _CofreScreenState extends State<CofreScreen> {
 
                       const SizedBox(height: 30.0),
 
-                      // Sugestão
-                      _buildSugestaoCard(sugestao),
-
-                      // Botões de Ação
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => Contribuicao(cofreId: widget.cofreId)),
-                          ).then((_) => _carregarDados());
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(255, 255, 187, 0),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
-                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      // ALERTA DE ENCERRADO
+                      if (isFinalizado)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          margin: const EdgeInsets.only(bottom: 20),
+                          decoration: BoxDecoration(color: Colors.red.shade100, borderRadius: BorderRadius.circular(8)),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.lock, color: Colors.red),
+                              const SizedBox(width: 8),
+                              Text("Viagem Encerrada", style: GoogleFonts.poppins(color: Colors.red.shade900, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
                         ),
-                        child: Text('Adicionar Contribuição', style: GoogleFonts.poppins(fontSize: 18, color: Colors.white)),
-                      ),
 
-                      const SizedBox(height: 20.0),
+                      // Sugestão (Só se aberto)
+                      if (!isFinalizado) _buildSugestaoCard(sugestao),
 
-                      // Botão Planejamento
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => PlanejamentoScreen(cofreId: widget.cofreId)),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.purple.shade400,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
-                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      // Botões de Ação (CONDICIONAIS)
+                      if (!isFinalizado) ...[
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => Contribuicao(cofreId: widget.cofreId)),
+                            ).then((_) => _carregarDados());
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color.fromARGB(255, 255, 187, 0),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
+                            padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          ),
+                          child: Text('Adicionar Contribuição', style: GoogleFonts.poppins(fontSize: 18, color: Colors.white)),
                         ),
-                        child: Text('Planejamento de Custos', style: GoogleFonts.poppins(fontSize: 18, color: Colors.white)),
-                      ),
 
-                      const SizedBox(height: 20.0),
+                        const SizedBox(height: 20.0),
+
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => PlanejamentoScreen(cofreId: widget.cofreId)),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.purple.shade400,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
+                            padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          ),
+                          child: Text('Planejamento de Custos', style: GoogleFonts.poppins(fontSize: 18, color: Colors.white)),
+                        ),
+                        const SizedBox(height: 20.0),
+                      ],
 
                       ElevatedButton(
                         onPressed: () {
@@ -557,6 +588,24 @@ class _CofreScreenState extends State<CofreScreen> {
                         ),
                         child: Text('Histórico de Contribuições', style: GoogleFonts.poppins(fontSize: 18, color: Colors.black)),
                       ),
+                      
+                      // BOTÃO DE ENCERRAR (NOVO - Só para Coordenador)
+                      if (souCoordenador && !isFinalizado) ...[
+                        const SizedBox(height: 40.0),
+                        const Divider(),
+                        const SizedBox(height: 10.0),
+                        
+                        TextButton.icon(
+                          onPressed: () => _confirmarEncerramento(context, detalhesStore),
+                          icon: const Icon(Icons.lock_outline, color: Colors.red),
+                          label: Text("Encerrar Viagem", style: GoogleFonts.poppins(color: Colors.red, fontWeight: FontWeight.bold)),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                            backgroundColor: Colors.red.withOpacity(0.1),
+                          ),
+                        ),
+                      ],
+
                       const SizedBox(height: 50.0),
                     ],
                   ),
