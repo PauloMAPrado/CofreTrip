@@ -13,6 +13,7 @@ class Cofre {
   DateTime dataCriacao;
   DateTime? dataViagem;
   final String joinCode;
+  final bool isFinalizado;
 
   Cofre({
     this.id,
@@ -24,6 +25,7 @@ class Cofre {
     this.descricao,
     this.dataViagem,
     required this.joinCode,
+    this.isFinalizado = false,
   });
 
   static String _generateJoinCode(int length) {
@@ -47,10 +49,10 @@ class Cofre {
       valorPlano: valorPlano,
       despesasTotal: 0,
       totalArrecadado: 0.0,
-      dataCriacao: DateTime.now(), // Data atual
-      dataViagem: dataViagem, // Data de Início da Viagem do formulário
-      joinCode: _generateJoinCode(6), // Gera um código de 6 dígitos
-      // 'id' fica nulo, esperando o Firestore
+      dataCriacao: DateTime.now(),
+      dataViagem: dataViagem,
+      joinCode: _generateJoinCode(6),
+      isFinalizado: false,
     );
   }
 
@@ -77,6 +79,7 @@ class Cofre {
       
       // Segurança extra: se não tiver joinCode (cofres antigos), gera vazio
       joinCode: data['joinCode'] as String? ?? '', 
+      isFinalizado: data['isFinalizado'] ?? false,
     );
   }
 
@@ -90,6 +93,7 @@ class Cofre {
       'data_criacao': dataCriacao,
       'data_viagem': dataViagem,
       'joinCode': joinCode,
+      'isFinalizado': isFinalizado,
     };
   }
 
@@ -103,6 +107,7 @@ class Cofre {
     DateTime? dataCriacao,
     DateTime? dataViagem,
     String? joinCode,
+    bool? isFinalizado,
   }) {
     return Cofre(
       // CORREÇÃO 1: Bug crítico resolvido (usando ??)
@@ -115,6 +120,7 @@ class Cofre {
       dataCriacao: dataCriacao ?? this.dataCriacao,
       dataViagem: dataViagem ?? this.dataViagem,
       joinCode: joinCode ?? this.joinCode,
+      isFinalizado: isFinalizado ?? this.isFinalizado,
     );
   }
 }

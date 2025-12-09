@@ -12,14 +12,38 @@ import 'package:travelbox/views/modules/footbar.dart';
 class BalancoScreen extends StatelessWidget {
   const BalancoScreen({super.key});
 
+  // Função auxiliar para confirmar pagamento
+  void _confirmarPagamento(BuildContext context, DetalhesCofreStore store, String devedorId, double valor, String nome) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text("Quitar Dívida de $nome"),
+        content: Text("Confirma que $nome pagou R\$ ${valor.toStringAsFixed(2)}?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancelar")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await store.quitarDivida(devedorId, valor);
+            },
+            child: const Text("Confirmar Pagamento", style: TextStyle(color: Colors.white)),
+          )
+        ],
+      ),
+    );
+  }
+
+
+
+
   @override
   Widget build(BuildContext context) {
     final store = context.watch<DetalhesCofreStore>();
     final despesasReais = store.despesasReais;
     final saldos = store.mapaDeSaldos;
     final mapUsuarios = store.contribuidoresMap;
-    final detalhesStore = context.watch<DetalhesCofreStore>();
-    final bool cofreFechado = detalhesStore.isCofreFinalizado;
+    final bool isFinalizado = store.isCofreFinalizado;
     
     final currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
     
@@ -28,27 +52,16 @@ class BalancoScreen extends StatelessWidget {
       backgroundColor: const Color(0xFF1E90FF),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 80.0),
-        child: FloatingActionButton.extended(
-          // 🎯 CORRIGIDO: Propriedade única com lógica condicional
-          onPressed: cofreFechado 
-              ? null // Desativa o botão se o cofre estiver fechado
-              : () => Navigator.push(
-                  context, 
-                  MaterialPageRoute(builder: (_) => RegistrarGasto())
-                ),
-          
-          // Feedback visual de estado: Muda a cor se estiver fechado
-          backgroundColor: cofreFechado ? Colors.grey : Colors.redAccent,
-          
-          icon: const Icon(Icons.receipt, color: Colors.white),
-          
-          // Feedback visual de estado: Muda o texto
-          label: Text(
-            cofreFechado ? "Cofre Fechado" : "Novo Gasto", 
-            style: const TextStyle(color: Colors.white)
-          ),
-        ),
+        child: isFinalizado 
+          ? null 
+          : FloatingActionButton.extended(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistrarGasto())),
+              backgroundColor: Colors.redAccent,
+              icon: const Icon(Icons.receipt, color: Colors.white),
+              label: const Text("Novo Gasto", style: TextStyle(color: Colors.white)),
+            ),
       ),
+
       body: Column(
         children: [
           const Header(),
@@ -59,10 +72,44 @@ class BalancoScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(24, 30, 24, 0),
                 child: Column(
                   children: [
-                    Text('Balanço da Viagem', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 20),
+                    Text(
+                      'Balanço da Viagem', 
+                      style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black)
+                    ),
+                    const SizedBox(height: 10),
+                    
+                    // --- STATUS INFORMATIVO (NOVO) ---
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 20),
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: isFinalizado ? Colors.red.shade100 : Colors.green.shade100,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: isFinalizado ? Colors.red : Colors.green),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isFinalizado ? Icons.lock : Icons.lock_open, 
+                            size: 16, 
+                            color: isFinalizado ? Colors.red : Colors.green
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            isFinalizado ? "Viagem Encerrada - Apenas Acertos" : "Viagem Aberta - Gastos Permitidos",
+                            style: GoogleFonts.poppins(
+                              fontSize: 12, 
+                              color: isFinalizado ? Colors.red.shade800 : Colors.green.shade800,
+                              fontWeight: FontWeight.w600
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
 
-                    // --- CARD DE QUEM DEVE QUEM ---
+                    // --- CARD DE SALDOS ---
+                    // (O restante do arquivo continua igual ao anterior...)
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 5)]),
@@ -71,31 +118,55 @@ class BalancoScreen extends StatelessWidget {
                         children: [
                           Text("Acerto de Contas", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
                           const Divider(),
-                          if (saldos.isEmpty)
-                            const Padding(padding: EdgeInsets.all(8.0), child: Text("Sem dados ainda.")),
+                          if (saldos.isEmpty) const Padding(padding: EdgeInsets.all(8.0), child: Text("Sem dados ainda.")),
                           
                           ...saldos.entries.map((entry) {
                             final userId = entry.key;
                             final saldo = entry.value;
                             final nome = mapUsuarios[userId]?.nome ?? "Membro";
                             
-                            // Se saldo for muito próximo de zero (erro de arredondamento), ignora
-                            if (saldo.abs() < 0.01) return const SizedBox.shrink();
+                            if (saldo.abs() < 0.01) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                       Text(nome, style: GoogleFonts.poppins(color: Colors.grey)),
+                                       const Text("Quitado ✅", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                );
+                            }
 
                             final bool aReceber = saldo > 0;
 
                             return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(nome, style: GoogleFonts.poppins()),
-                                  Text(
-                                    aReceber ? "Recebe ${currencyFormat.format(saldo)}" : "Deve ${currencyFormat.format(saldo.abs())}",
-                                    style: GoogleFonts.poppins(
-                                      fontWeight: FontWeight.bold,
-                                      color: aReceber ? Colors.green : Colors.red,
-                                    ),
+                                  Text(nome, style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        aReceber ? "Recebe ${currencyFormat.format(saldo)}" : "Deve ${currencyFormat.format(saldo.abs())}",
+                                        style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: aReceber ? Colors.green : Colors.red),
+                                      ),
+                                      
+                                      // BOTÃO QUITAR (Mantido)
+                                      if (isFinalizado && !aReceber) 
+                                        Padding(
+                                          padding: const EdgeInsets.only(left: 8.0),
+                                          child: SizedBox(
+                                            height: 30,
+                                            child: ElevatedButton(
+                                              onPressed: () => _confirmarPagamento(context, store, userId, saldo.abs(), nome),
+                                              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(horizontal: 10)),
+                                              child: const Text("Pagar", style: TextStyle(fontSize: 12, color: Colors.white)),
+                                            ),
+                                          ),
+                                        )
+                                    ],
                                   ),
                                 ],
                               ),

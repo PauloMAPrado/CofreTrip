@@ -214,6 +214,18 @@ class FirestoreService {
     });
   }
 
+  Future<void> updateDespesa(Despesa despesa) async {
+    if (despesa.id == null) return;
+    // .update() mistura os dados novos com os antigos
+    await _db.collection('despesas').doc(despesa.id).update(despesa.toJson());
+  }
+
+  Future<void> finalizarCofre(String cofreId) async {
+    await _db.collection('cofres').doc(cofreId).update({
+      'isFinalizado': true,
+    });
+  }
+
 
 
   // ========================== MÉTODOS DE CONTRIBUIÇÃO ========================================

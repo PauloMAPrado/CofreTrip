@@ -38,6 +38,8 @@ class DetalhesCofreStore extends ChangeNotifier {
   List<Despesa> get despesas => _despesas;
   Map<String, Usuario> get contribuidoresMap => _contribuidoresMap;
 
+  
+
   // 🎯 NOVO: Lógica para mapeamento de nomes (adicionada)
   /// Retorna o nome de exibição de um usuário, substituindo pelo pronome "Você" se for o usuário logado.
   String getDisplayName(String userId, String? usuarioLogadoId) {
@@ -106,19 +108,7 @@ class DetalhesCofreStore extends ChangeNotifier {
   /// Retorna TRUE se a data planejada da viagem (_cofreAtivo.dataViagem) já passou.
   /// Quando TRUE, o cofre deve bloquear novas Despesas (RegistrarGasto) e Contribuições.
   bool get isCofreFinalizado {
-    if (_cofreAtivo == null || _cofreAtivo!.dataViagem == null) {
-      return false; 
-    }
-
-    final hoje = DateTime.now();
-    final dataViagem = _cofreAtivo!.dataViagem!;
-    
-    // Compara apenas a data (ignora a hora) para considerar o dia todo como ativo
-    final hojeSemHora = DateTime(hoje.year, hoje.month, hoje.day);
-    final dataViagemSemHora = DateTime(dataViagem.year, dataViagem.month, dataViagem.day);
-
-    // Se hoje é no dia da viagem ou depois, consideramos finalizado.
-    return hojeSemHora.isAfter(dataViagemSemHora) || hojeSemHora.isAtSameMomentAs(dataViagemSemHora);
+    return _cofreAtivo?.isFinalizado ?? false;
   }
 
 
@@ -199,10 +189,12 @@ class DetalhesCofreStore extends ChangeNotifier {
   }
 
 
+  
+
 
 
 //===============================================================================
-//                          ADICIONAR CONTRIBUIÇÃO
+//                          CONTRIBUIÇÃO
 //===============================================================================
 
   Future<bool> adicionarContribuicao({
@@ -293,8 +285,56 @@ class DetalhesCofreStore extends ChangeNotifier {
       return false;
     }
   }
-  
 
+  // AÇÃO: Editar Despesa
+  Future<bool> editarDespesa(Despesa despesaEditada) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // Chama o serviço
+      await _firestoreService.updateDespesa(despesaEditada);
+
+      // Atualiza na lista local (Troca a velha pela nova)
+      final index = _despesas.indexWhere((d) => d.id == despesaEditada.id);
+      if (index != -1) {
+        _despesas[index] = despesaEditada;
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = "Erro ao editar: $e";
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // AÇÃO: Remover Despesa
+  Future<bool> removerDespesa(String despesaId) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // Chama o serviço
+      await _firestoreService.deleteDespesa(despesaId);
+
+      // Remove da lista local
+      _despesas.removeWhere((d) => d.id == despesaId);
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = "Erro ao remover: $e";
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+  
   // GETTER: Filtra apenas despesas reais (executadas)
   List<Despesa> get despesasReais => _despesas.where((d) => d.tipo == TipoDespesa.real).toList();
 
@@ -306,32 +346,46 @@ class DetalhesCofreStore extends ChangeNotifier {
   Map<String, double> get mapaDeSaldos {
     Map<String, double> saldos = {};
 
-    // 1. Inicializa todos os membros com saldo 0
+    // Inicializa zerado
     for (var membro in _membros) {
       saldos[membro.idUsuario] = 0.0;
     }
 
-    // 2. Processa cada despesa real
+    // A. Processa GASTOS REAIS (Gera dívida)
     for (var despesa in despesasReais) {
       if (despesa.pagoPorId == null) continue;
 
-      // Quem pagou ganha CRÉDITO (+)
       double valorTotal = despesa.valor;
+      
+      // Quem pagou ganha crédito (+)
       saldos[despesa.pagoPorId!] = (saldos[despesa.pagoPorId!] ?? 0) + valorTotal;
 
-      // O valor é dividido por TODOS os membros (DÉBITO -)
-      // (MVP: Divisão igualitária)
+      // O custo é dividido entre todos (débito -)
       int numMembros = _membros.length;
       if (numMembros > 0) {
         double parteDeCada = valorTotal / numMembros;
-        
         for (var membro in _membros) {
           saldos[membro.idUsuario] = (saldos[membro.idUsuario] ?? 0) - parteDeCada;
         }
       }
     }
+
+    final acertos = _despesas.where((d) => d.tipo == TipoDespesa.acerto).toList();
+    
+    for (var acerto in acertos) {
+       if (acerto.pagoPorId == null) continue;
+       
+       // Quem pagou o acerto está "quitando" sua parte, então ganha crédito no saldo pessoal
+       saldos[acerto.pagoPorId!] = (saldos[acerto.pagoPorId!] ?? 0) + acerto.valor;
+       
+       // Nota: Não subtraímos de ninguém, pois o dinheiro "entrou" para cobrir o buraco.
+    }
+
+
     return saldos;
   }
+  
+//--------------------------------------- despesa real ----------------------------------
 
   // AÇÃO: Adicionar Gasto Real
   Future<bool> adicionarDespesaReal({
@@ -363,6 +417,60 @@ class DetalhesCofreStore extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // 3. AÇÃO: FINALIZAR VIAGEM (Apenas Coordenador)
+  Future<bool> encerrarViagem() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      if (_cofreAtivo == null) throw Exception("Cofre inválido");
+      
+      // Chama o serviço para atualizar no banco
+      await _firestoreService.finalizarCofre(_cofreAtivo!.id!);
+      
+      // Atualiza o estado local imediatamente
+      _cofreAtivo = _cofreAtivo!.copyWith(isFinalizado: true);
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // 4. AÇÃO: QUITAR DÍVIDA (Registrar Acerto)
+  Future<bool> quitarDivida(String usuarioDevedorId, double valor) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+       // Cria uma despesa especial do tipo ACERTO
+       Despesa acerto = Despesa(
+         idCofre: _cofreAtivo!.id!,
+         titulo: "Pagamento de Dívida",
+         valor: valor,
+         tipo: TipoDespesa.acerto, // <--- O Pulo do Gato
+         categoria: CategoriaDespesa.outros,
+         pagoPorId: usuarioDevedorId,
+         data: DateTime.now(),
+       );
+
+       await _firestoreService.addDespesa(acerto);
+       _despesas.add(acerto);
+
+       _isLoading = false;
+       notifyListeners();
+       return true;
     } catch (e) {
       _errorMessage = e.toString();
       _isLoading = false;
