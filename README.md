@@ -34,7 +34,7 @@ Seu aplicativo resolve os maiores dilemas de viagens em grupo:
 
 ## 💻 Arquitetura e Tecnologias
 
-Nosso projeto segue uma arquitetura baseada em Providers para uma clara **Separação de Responsabilidades (SoC)**.
+Nosso projeto segue uma arquitetura baseada em Providers.
 
 | Categoria | Tecnologia | Função |
 | :--- | :--- | :--- |
