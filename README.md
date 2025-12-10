@@ -2,6 +2,8 @@
 
 > **Slogan:** **Economize. Explore. Viva.** Gerencie metas e despesas de viagem de forma colaborativa e transparente.
 
+**Status do Projeto:** 🟢 **Finalizado (V1.0)**
+
 **CofreTrip** é um aplicativo mobile colaborativo desenvolvido em **Flutter**, projetado para simplificar a complexidade do planejamento financeiro de viagens em grupo. Nosso foco é duplo: **acompanhar a meta de economia** (controle de caixa) e **gerenciar despesas internas** de forma transparente, com um sistema de *Splitwise* inteligente e integrado.
 
 ---
@@ -36,25 +38,23 @@ Nosso projeto segue uma arquitetura baseada em Providers para uma clara **Separa
 
 | Categoria | Tecnologia | Função |
 | :--- | :--- | :--- |
-| **Frontend/UI** | **Flutter** (Dart) | Desenvolvimento cross-platform (Android/iOS). |
-| **Estado/Lógica** | **Provider** (`ChangeNotifier`) | Centralização da lógica de negócios (Stores) e notificação de mudanças na UI. |
-| **Camada de Dados** | **Stores (`DetalhesCofreStore`, `DespesaProvider`)** | Gerenciamento de estado complexo, lógica de cálculo financeiro e simplificação de dívidas. |
-| **Backend/DB** | **Firebase Firestore** | Banco de dados NoSQL e sincronização de dados em tempo real. |
+| **Linguagem Principal** | **Dart** (via Flutter) | Linguagem de programação moderna e tipada. |
+| **Frontend/UI** | **Flutter** | Desenvolvimento cross-platform (Android/iOS). |
+| **Estado/Lógica** | **Provider** (`ChangeNotifier`) | Centralização da lógica de negócios (Stores). |
+| **Backend/BD** | **Firebase Firestore** | **Banco de Dados NoSQL** para sincronização de dados em tempo real. |
 | **Autenticação** | **Firebase Auth** | Serviço de autenticação, login e segurança. |
 | **Utils** | **intl** / **Input Formatters** | Formatação de moeda (R$) e máscaras de entrada. |
 
 ---
 
-## 👥 Créditos e Colaboradores
+## 👥 Informações do Projeto e Colaboradores
 
-* **Desenvolvedores** 🧑‍💻:
-    * Sara Luiz de Farias
-    * Paulo Prado
-    * Luís Fernando Naves
-    * Ítalo Guimarães
-* **Professor Orientador** 👨‍🏫: Rafael Divino Ferreira Feitosa, Maryele Lazara Rezende e Paulo Henrique Rodrigues Araujo.
-* **Instituição** 🏫: IF Goiano - Campus Ceres
-* **Disciplina/Módulo** 📚: Prática de Desenvolvimento de Software, Marketing e Programação para Dispositivos Móveis.
+| Categoria | Detalhe |
+| :--- | :--- |
+| **Desenvolvedores** 🧑‍💻 | Sara Luiz de Farias, Paulo Prado, Luís Fernando Naves, Ítalo Guimarães |
+| **Instituição** 🏫 | IF Goiano - Campus Ceres |
+| **Módulos Abrangidos** 📚 | Prática de Desenvolvimento de Software, Marketing e Programação para Dispositivos Móveis. |
+| **Professores Orientadores** 👨‍🏫 | Rafael Divino Ferreira Feitosa, Maryele Lazara Rezende, Paulo Henrique Rodrigues Araujo |
 
 ---
 
