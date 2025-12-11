@@ -25,9 +25,9 @@ class Usuario {
   }
 
   factory Usuario.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data()!; // Pega o mapa de dados
+    final data = doc.data()!; 
     return Usuario(
-      id: doc.id, // Pega o ID do documento
+      id: doc.id, 
       nome: data['nome'] as String,
       email: data['email'] as String,
       cpf: data['cpf'] as String,

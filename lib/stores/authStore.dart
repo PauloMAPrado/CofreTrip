@@ -63,6 +63,8 @@ class AuthStore extends ChangeNotifier {
   }
 
 //===========================    TESTE   ==================================================
+//===========================    descobrir um bug   ==================================================
+
 
 // // Monitora mudanças na autenticação (Login/Logout)
 //   Future<void> _onAuthStateChanged(User? firebaseUser) async {

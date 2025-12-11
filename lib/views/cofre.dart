@@ -18,7 +18,6 @@ import 'package:travelbox/views/planejamento.dart';
 // Imports Store
 import 'package:travelbox/stores/detalhesCofreStore.dart';
 import 'package:travelbox/stores/authStore.dart';
-import 'package:travelbox/models/enums/nivelPermissao.dart'; // Importe o Enum
 
 class CofreScreen extends StatefulWidget {
   final String cofreId;

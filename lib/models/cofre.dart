@@ -8,8 +8,8 @@ class Cofre {
   String nome;
   String? descricao;
   int valorPlano;
-  int despesasTotal; // para o futuro
-  double totalArrecadado; // progresso (novo campo!)
+  int despesasTotal; 
+  double totalArrecadado;
   DateTime dataCriacao;
   DateTime? dataViagem;
   final String joinCode;
@@ -20,7 +20,7 @@ class Cofre {
     required this.nome,
     required this.valorPlano,
     required this.despesasTotal,
-    this.totalArrecadado = 0.0, // Inicia zerado
+    this.totalArrecadado = 0.0,
     required this.dataCriacao,
     this.descricao,
     this.dataViagem,
@@ -110,7 +110,6 @@ class Cofre {
     bool? isFinalizado,
   }) {
     return Cofre(
-      // CORREÇÃO 1: Bug crítico resolvido (usando ??)
       id: id ?? this.id, 
       nome: nome ?? this.nome,
       descricao: descricao ?? this.descricao,

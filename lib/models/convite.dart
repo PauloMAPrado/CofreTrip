@@ -37,7 +37,7 @@ class Convite {
   Map<String, dynamic> toJson() {
     return {
       'status': status.name, // Salva o enum como string
-      'data_envio': dataEnvio, // Firebase lida com DateTime
+      'data_envio': dataEnvio, 
       'id_cofre': idCofre,
       'id_usuario_convidador': idUsuarioConvidador,
       'id_usuario_convidado': idUsuarioConvidado,

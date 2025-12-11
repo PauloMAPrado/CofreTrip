@@ -33,7 +33,6 @@ class Permissao {
   /// Converte o objeto Permissao para um mapa JSON.
   Map<String, dynamic> toJson() {
     return {
-      // Salva o enum como uma string (ex: "admin")
       'nivel_permissao': nivelPermissao.name,
       'id_usuario': idUsuario,
       'id_cofre': idCofre,
